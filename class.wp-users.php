@@ -28,14 +28,6 @@ class WP_Users {
 //	function __destruct() {
 //	}
 
-	function is_id( $id ) {
-		return is_numeric( $id );
-	}
-
-	function id( $id ) {
-		return (int) $id;
-	}
-
 	function _put_user( $args = null ) {
 		global $backpress_user_login_cache;
 
@@ -55,7 +47,7 @@ class WP_Users {
 
 		extract( $args, EXTR_SKIP );
 
-		$ID = $this->id($ID);
+		$ID = (int) $ID;
 	
 		$user_login = $this->sanitize_user( $user_login );
 		$user_nicename = $this->sanitize_slug( $user_login );
@@ -150,8 +142,8 @@ class WP_Users {
 		$defaults = array( 'cache' => true, 'output' => OBJECT, 'by' => false );
 		extract( wp_parse_args( $args, $defaults ), EXTR_SKIP );
 
-		if ( $this->is_id( $ID ) ) {
-			$ID = $this->id( $ID );
+		if ( is_numeric( $ID ) ) {
+			$ID = (int) $ID;
 			$sql = "SELECT * FROM {$this->db->users} WHERE ID = %s";
 		} else {
 			$ID = $this->sanitize_user( $ID );
@@ -189,6 +181,7 @@ class WP_Users {
 	}
 
 	// Used for user meta, but can be used for other meta data (such as bbPress' topic meta)
+	// Should this be in the class or should it be it's own special function?
 	function append_meta( $object, $args = null ) {
 		$defaults = array( 'meta_table' => 'usermeta', 'meta_field' => 'user_id', 'id_field' => 'ID' );
 		$args = wp_parse_args( $args, $defaults );
@@ -226,13 +219,13 @@ class WP_Users {
 		$args = wp_parse_args( $args, $defaults );
 		extract( $args, EXTR_SKIP );
 
-		if ( !$this->is_id($id) )
+		if ( is_numeric($id) )
 			return false;
+
+		$id = (int) $id;
 
 		if ( is_null($meta_key) || is_null($meta_value) )
 			return false;
-
-		$id = $this->id( $id );
 
 		$meta_key = preg_replace('|[^a-z0-9_]|i', '', $meta_key);
 		if ( 'usermeta' == $meta_table && 'capabilities' == $meta_key )
@@ -260,13 +253,13 @@ class WP_Users {
 		$args = wp_parse_args( $args, $defaults );
 		extract( $args, EXTR_SKIP );
 
-		if ( !$this->is_id($id) )
+		if ( is_numeric($id) )
 			return false;
+
+		$id = (int) $id;
 
 		if ( is_null($meta_key) )
 			return false;
-
-		$id = $this->id( $id );
 
 		$meta_key = preg_replace('|[^a-z0-9_]|i', '', $meta_key);
 
@@ -312,16 +305,15 @@ class WP_Users {
 	 * @return WP_User Current user User object
 	 */
 	function set_current_user( $user_id ) {
-		if ( !$this->is_id( $user_id ) ) {
-			if ( !$user = $this->get_user( $user_id ) )
-				return new WP_Error( 'user_id', __( 'Invalid User' ) );
-			else
-				$user_id = $user->ID;
-		}
+		if ( !$user = $this->get_user( $user_id ) )
+			return new WP_Error( 'user_id', __( 'Invalid User' ) );
+
+		$user_id = $user->ID;
 
 		if ( isset($this->current->ID) && $user_id == $this->current->ID )
 			return $this->current;
 
+		// TODO: WP_User may not be generic enough for backpress - look into that
 		$this->current = new WP_User( $user_id );
 
 		// WP add_action( 'set_current_user', 'setup_userdata', 1 );
