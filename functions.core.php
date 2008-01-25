@@ -56,4 +56,54 @@ function is_serialized_string( $data ) {
 	return false;
 }
 
+function is_email($user_email) {
+	$chars = "/^([a-z0-9+_]|\\-|\\.)+@(([a-z0-9_]|\\-)+\\.)+[a-z]{2,6}\$/i";
+	if (strpos($user_email, '@') !== false && strpos($user_email, '.') !== false) {
+		if (preg_match($chars, $user_email)) {
+			return true;
+		} else {
+			return false;
+		}
+	} else {
+		return false;
+	}
+}
+
+function sanitize_title($title, $fallback_title = '') {
+	$title = strip_tags($title);
+	$title = apply_filters('sanitize_title', $title);
+
+	if ( '' === $title || false === $title )
+		$title = $fallback_title;
+
+	return $title;
+}
+
+function sanitize_title_with_dashes($title) {
+	$title = strip_tags($title);
+	// Preserve escaped octets.
+	$title = preg_replace('|%([a-fA-F0-9][a-fA-F0-9])|', '---$1---', $title);
+	// Remove percent signs that are not part of an octet.
+	$title = str_replace('%', '', $title);
+	// Restore octets.
+	$title = preg_replace('|---([a-fA-F0-9][a-fA-F0-9])---|', '%$1', $title);
+
+	$title = remove_accents($title);
+	if (seems_utf8($title)) {
+		if (function_exists('mb_strtolower')) {
+			$title = mb_strtolower($title, 'UTF-8');
+		}
+		$title = utf8_uri_encode($title, 200);
+	}
+
+	$title = strtolower($title);
+	$title = preg_replace('/&.+?;/', '', $title); // kill entities
+	$title = preg_replace('/[^%a-z0-9 _-]/', '', $title);
+	$title = preg_replace('/\s+/', '-', $title);
+	$title = preg_replace('|-+|', '-', $title);
+	$title = trim($title, '-');
+
+	return $title;
+}
+
 ?>

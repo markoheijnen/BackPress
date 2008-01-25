@@ -35,7 +35,7 @@ class WP_Users {
 		$ID = (int) $ID;
 	
 		$user_login = $this->sanitize_user( $user_login );
-		$user_nicename = $this->sanitize_slug( $user_login );
+		$user_nicename = $this->sanitize_nicename( $user_nicename ? $user_nicename : $user_login );
 		if ( !$user_login || !$user_nicename )
 			return new WP_Error( 'user_login', __('Invalid login name') );
 
@@ -153,7 +153,7 @@ class WP_Users {
 				}
 				$sql = "SELECT * FROM {$this->db->users} WHERE user_email = %s";
 			} elseif ( 'nicename' == $by ) { // No cache?
-				$user_id = $this->sanitize_slug( $user_id );
+				$user_id = $this->sanitize_nicename( $user_id );
 				$sql = "SELECT * FROM {$this->db->users} WHERE user_nicename = %s";
 			} else {
 				$user_id = $this->sanitize_user( $user_id );
@@ -326,6 +326,18 @@ class WP_Users {
 		wp_cache_delete( $id, $cache_group );
 
 		return true;
+	}
+
+	function sanitize_user( $user_login, $strict = false ) {
+		return sanitize_user( $user_login, $strict );
+	}
+
+	function sanitize_nicename( $slug ) {
+		return sanitize_title( $slug );
+	}
+
+	function is_email( $email ) {
+		return is_email( $email );
 	}
 
 }
