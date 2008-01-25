@@ -59,8 +59,7 @@ class WP_Auth {
 		if ( isset($this->current->ID) && $user_id == $this->current->ID )
 			return $this->current;
 
-		// TODO: WP_User may not be generic enough for backpress - look into that
-		$this->current = new BB_User( $user_id );
+		$this->current = new WP_User( $user_id );
 
 		// WP add_action( 'set_current_user', 'setup_userdata', 1 );
 
@@ -156,7 +155,7 @@ class WP_Auth {
 	 * @param int $expiration Cookie expiration in seconds
 	 * @return string Authentication cookie contents
 	 */
-	function wp_generate_auth_cookie( $user_id, $expiration ) {
+	function generate_auth_cookie( $user_id, $expiration ) {
 		global $wp_users_object;
 		$user = $wp_users_object->get_user( $user_id );
 		if ( is_wp_error($user) )
@@ -184,9 +183,12 @@ class WP_Auth {
 	 * @param bool $remember Whether to remember the user or not
 	 */
 	function set_auth_cookie( $user_id, $expiration = 0 ) {
-		$cookie = $this->generate_auth_cookie($user_id, $expiration);
 		if ( !$expiration = $expire = (int) $expiration )
 			$expiration = time() + 172800; // 2 days
+
+		$cookie = $this->generate_auth_cookie($user_id, $expiration);
+		if ( is_wp_error( $cookie ) )
+			return $cookie;
 
 		do_action('set_auth_cookie', $cookie, $expiration);
 

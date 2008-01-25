@@ -18,7 +18,7 @@ class BP_Roles {
 		$this->db =& $db;
 		$this->role_key =& $this->db->prefix;
 
-		$this->default_roles();
+		$this->get_roles();
 
 		if ( empty($this->roles) )
 			return;
@@ -26,13 +26,13 @@ class BP_Roles {
 		$this->role_objects = array();
 		$this->role_names =  array();
 		foreach ($this->roles as $role => $data) {
-			$this->role_objects[$role] = new WP_Role($role, $this->roles[$role]['capabilities']);
+			$this->role_objects[$role] = new BP_Role($role, $this->roles[$role]['capabilities']);
 			$this->role_names[$role] = $this->roles[$role]['name'];
 		}
 	}
 
-	function default_roles() {
-		do_action_ref_array( 'bp_default_roles', array(&$this) );
+	function get_roles() {
+		$this->roles = apply_filters( 'get_roles', array() );
 	}
 
 	function add_role($role, $display_name, $capabilities = '') {
@@ -76,9 +76,13 @@ class BP_Roles {
 		return $this->role_names;
 	}
 
-	function is_role($role)
-	{
+	function is_role($role) {
 		return isset($this->role_names[$role]);
+	}
+
+	function map_meta_cap( $cap, $user_id ) {
+		$args = array_slice(func_get_args(), 2);
+		return apply_filters( 'map_meta_cap', array(), $cap, $user_id, $args );
 	}
 }
 
@@ -113,10 +117,6 @@ class BP_Role {
 			return false;
 	}
 
-	function map_meta_cap( $cap, $user_id ) {
-		$args = array_slice(func_get_args(), 2);
-		return apply_filters( 'map_meta_cap', arra(), $cap, $user_id, $args );
-	}
 }
 
 ?>

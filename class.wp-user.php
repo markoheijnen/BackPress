@@ -37,10 +37,10 @@ class WP_User {
 	}
 
 	function get_role_caps() {
-		global $wp_roles;
+		global $wp_roles, $wp_users_object;
 
 		if ( !isset($wp_roles) )
-			$wp_roles = new WP_Roles();
+			$wp_roles = new BP_Roles( $wp_users_object->db );
 
 		// Filter out caps that are not role names and assign to $this->roles
 		if( is_array($this->caps) )
