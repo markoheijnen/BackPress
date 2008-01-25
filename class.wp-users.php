@@ -219,17 +219,18 @@ class WP_Users {
 		$args = wp_parse_args( $args, $defaults );
 		extract( $args, EXTR_SKIP );
 
-		if ( is_array($object) ) :
+		if ( is_array($object) ) {
 			$trans = array();
 			foreach ( array_keys($object) as $i )
 				$trans[$object[$i]->$id_field] =& $object[$i];
 			$ids = join(',', array_keys($trans));
-			if ( $metas = $this->db->get_results("SELECT $meta_field, meta_key, meta_value FROM $meta_table WHERE $meta_field IN ($ids)") )
-				foreach ( $metas as $meta ) :
+			if ( $metas = $this->db->get_results("SELECT $meta_field, meta_key, meta_value FROM {$this->db->$meta_table} WHERE $meta_field IN ($ids)") ) {
+				foreach ( $metas as $meta ) {
 					$trans[$meta->$meta_field]->{$meta->meta_key} = maybe_unserialize( $meta->meta_value );
-					if ( strpos($meta->meta_key, $this->db->table_prefix) === 0 )
-						$trans[$meta->$meta_field]->{substr($meta->meta_key, strlen($this->db->table_prefix))} = maybe_unserialize( $meta->meta_value );
-				endforeach;
+					if ( strpos($meta->meta_key, $this->db->prefix) === 0 )
+						$trans[$meta->$meta_field]->{substr($meta->meta_key, strlen($this->db->prefix))} = maybe_unserialize( $meta->meta_value );
+				}
+			}
 			foreach ( array_keys($trans) as $i ) {
 				wp_cache_add( $i, $trans[$i], $cache_group );
 				if ( 'users' == $cache_group ) {
@@ -238,20 +239,21 @@ class WP_Users {
 				}
 			}
 			return $object;
-		elseif ( $object ) :
-			if ( $metas = $this->db->get_results("SELECT meta_key, meta_value FROM $meta_table WHERE $meta_field = '{$object->$id_field}'") )
-				foreach ( $metas as $meta ) :
+		} elseif ( $object ) {
+			if ( $metas = $this->db->get_results("SELECT meta_key, meta_value FROM {$this->db->$meta_table} WHERE $meta_field = '{$object->$id_field}'") ) {
+				foreach ( $metas as $meta ) {
 					$object->{$meta->meta_key} = maybe_unserialize( $meta->meta_value );
-					if ( strpos($meta->meta_key, $this->db->table_prefix) === 0 )
-						$object->{substr($meta->meta_key, strlen($this->db->table_prefix))} = maybe_unserialize( $meta->meta_value );
-				endforeach;
+					if ( strpos($meta->meta_key, $this->db->prefix) === 0 )
+						$object->{substr($meta->meta_key, strlen($this->db->prefix))} = maybe_unserialize( $meta->meta_value );
+				}
+			}
 			wp_cache_add( $object->$id_field, $object, $cache_group );
 			if ( 'users' == $cache_group ) {
 				wp_cache_add($object->user_login, $object->ID, 'userlogins');
 				wp_cache_add($object->user_email, $object->ID, 'useremail');
 			}
 			return $object;
-		endif;
+		}
 	}
 	
 	function update_meta( $args = null ) {
