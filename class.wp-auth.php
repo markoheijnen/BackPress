@@ -47,8 +47,12 @@ class WP_Auth {
 	 */
 	function set_current_user( $user_id ) {
 		global $wp_users_object;
-		if ( !$user = $wp_users_object->get_user( $user_id ) )
-			return new WP_Error( 'user_id', __( 'Invalid User' ) );
+
+		$user = $wp_users_object->get_user( $user_id );
+		if ( is_wp_error( $user ) ) {
+			$this->current = 0;
+			return $this->current;
+		}
 
 		$user_id = $user->ID;
 
@@ -133,8 +137,9 @@ class WP_Auth {
 		if ( $hmac != $hash )
 			return false;
 
-		if ( !$user = $wp_users_object->get_user($username) )
-			return false;
+		$user = $wp_users_object->get_user($username);
+		if ( is_wp_user( $user ) )
+			return $user;
 
 		return $user->ID;
 	}
@@ -152,8 +157,9 @@ class WP_Auth {
 	 */
 	function wp_generate_auth_cookie( $user_id, $expiration ) {
 		global $wp_users_object;
-		if ( !$user = $wp_users_object->get_user( $user_id ) )
-			return false;
+		$user = $wp_users_object->get_user( $user_id );
+		if ( is_wp_error($user) )
+			return $user;
 
 		$key  = wp_hash($user->user_login . $expiration);
 		$hash = hash_hmac('md5', $user->user_login . $expiration, $key);
@@ -295,10 +301,14 @@ class WP_Auth {
 	 * @param int $user_id User ID
 	 */
 	function set_password( $password, $user_id ) {
+		global $wp_users_object;
+		$user = $wp_users_object->get_user( $user_id );
+		if ( is_wp_error( $user ) )
+			return $user;
+
+		$user_id = $user->ID;
 		$hash = $this->hash_password($password);
-		$query = $this->db->prepare("UPDATE {$this->db->users} SET user_pass = %s, user_activation_key = '' WHERE ID = %d", $hash, $user_id);
-		$this->db->query($query);
-		wp_cache_delete($user_id, 'users');
+		$wp_users_object->update_user( $user->ID, array( 'user_pass', $hash ) );
 	}
 }
 

@@ -35,12 +35,20 @@ class WP_Users {
 		$ID = (int) $ID;
 	
 		$user_login = $this->sanitize_user( $user_login );
-		$user_nicename = $this->sanitize_nicename( $user_nicename ? $user_nicename : $user_login );
-		if ( !$user_login || !$user_nicename )
+		if ( !$user_login )
 			return new WP_Error( 'user_login', __('Invalid login name') );
+		if ( !$ID && $this->get_user( $user_login ) ) )
+			return new WP_Error( 'user_login', __('Name already exists') );
+
+		if ( !$user_nicename = $this->sanitize_nicename( $user_nicename ? $user_nicename : $user_login ) )
+			return new WP_Error( 'user_nicename', __('Invalid nicename') );
+		if ( !$ID && $this->get_user( $user_nicename, array( 'by' => 'nicename' ) ) )
+			return new WP_Error( 'user_nicename', __('Nicename already exists') );
 
 		if ( !$user_email = $this->is_email( $user_email ) )
 			return new WP_Error( 'user_email', __('Invalid email address') );
+		if ( !$ID && $this->get_user( $user_email, array( 'by' => 'email' ) ) )
+			return new WP_Error( 'user_email', __('Email already exists') );
 
 		$user_url = clean_url( $user_url );
 
@@ -72,7 +80,7 @@ class WP_Users {
 		}
 	
 		if ( !$db_return )
-			return new WP_Error( 'BackPress::query', __('Query failed') );
+			return new WP_Error( 'WP_Users::_put_user', __('Query failed') );
 
 		// Cache the result
 		$user = (object) compact( array_keys($defaults) );
