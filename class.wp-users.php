@@ -218,7 +218,7 @@ class WP_Users {
 						$trans[$meta->$meta_field]->{substr($meta->meta_key, strlen($backpress->table_prefix))} = maybe_unserialize( $meta->meta_value );
 				endforeach;
 			foreach ( array_keys($trans) as $i ) {
-				wp_cache_add( $i, $trans[$i], $cache_group )
+				wp_cache_add( $i, $trans[$i], $cache_group );
 				if ( 'users' == $cache_group ) {
 					wp_cache_add( $trans[$i]->user_login, $i, 'userlogins' );
 					wp_cache_add( $trans[$i]->user_email, $i, 'useremail' );
