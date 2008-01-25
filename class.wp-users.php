@@ -37,7 +37,7 @@ class WP_Users {
 		$user_login = $this->sanitize_user( $user_login );
 		if ( !$user_login )
 			return new WP_Error( 'user_login', __('Invalid login name') );
-		if ( !$ID && $this->get_user( $user_login ) ) )
+		if ( !$ID && $this->get_user( $user_login ) )
 			return new WP_Error( 'user_login', __('Name already exists') );
 
 		if ( !$user_nicename = $this->sanitize_nicename( $user_nicename ? $user_nicename : $user_login ) )
