@@ -269,10 +269,11 @@ class WP_Users {
 		$args = wp_parse_args( $args, $defaults );
 		extract( $args, EXTR_SKIP );
 
-		if ( is_numeric($id) )
-			return false;
+		$user = $this->get_user( $id );
+		if ( is_wp_error($user) )
+			return $user;
 
-		$id = (int) $id;
+		$id = (int) $user->ID;
 
 		if ( is_null($meta_key) || is_null($meta_value) )
 			return false;
