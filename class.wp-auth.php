@@ -17,7 +17,7 @@ class WP_Auth {
 	function __construct( &$db, $cookie_args ) {
 		$this->db =& $db;
 
-		$cookie_array = wp_parse_args( $cookie_array, array( 'domain' => null, 'path' => null, 'name' => '', 'expire' => 0, 'secure' => false ) );
+		$cookie_array = wp_parse_args( $cookie_array, array( 'domain' => null, 'path' => null, 'name' => '', 'secure' => false ) );
 
 		$this->cookie_domains = (array) $cookie_array['domain'];
 		$this->cookie_paths = (array) $cookie_array['path'];

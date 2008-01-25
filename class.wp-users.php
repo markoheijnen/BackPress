@@ -62,7 +62,7 @@ class WP_Users {
 			$display_name = $user_login;
 
 		$db_return = NULL;
-		if ( $ID && NULL !== $this->db->get_var( "SELECT ID FROM $backpress->users WHERE ID = '$ID'" ) ) {
+		if ( $ID && NULL !== $this->db->get_var( "SELECT ID FROM {$this->db->users} WHERE ID = '$ID'" ) ) {
 			unset($args['ID']);
 			unset($args['user_registered']);
 			$db_return = $this->db->update( $this->db->users, compact( array_keys($args) ), compact('ID') );
@@ -127,50 +127,63 @@ class WP_Users {
 		$defaults = array( 'output' => OBJECT, 'by' => false );
 		extract( wp_parse_args( $args, $defaults ), EXTR_SKIP );
 
-		if ( is_numeric( $user_id ) ) {
-			$user_id = (int) $user_id;
-			if ( 0 === $user = wp_cache_get( $user_id, 'users' ) )
-				return new WP_Error( 'invalid-user', __('User does not exist' ) );
-			elseif ( $user )
-				return $user;
-			$sql = "SELECT * FROM {$this->db->users} WHERE ID = %s";
-		} elseif ( 'email' == $by ) {
-			$user_id = $this->sanitize_email( $user_id );
-			if ( 0 === $ID = wp_cache_get( $user_id, 'useremail' ) )
-				return new WP_Error( 'invalid-user', __('User does not exist' ) );
-			elseif ( $ID ) {
-				$args['by'] = false;
-				return $this->get_user( $ID, $args );
+		if ( is_array( $user_id ) ) {
+			$users = array();
+			foreach ( $user_id as $the_id ) {
+				$user = $this->get_user( $the_id, $args );
+				if ( !is_wp_error($user) )
+					$users[] = $user;
 			}
-			$sql = "SELECT * FROM {$this->db->users} WHERE user_email = %s";
+			$user = $users; // for later append_meta call
 		} else {
-			$user_id = $this->sanitize_user( $user_id );
-			if ( 0 === $ID = wp_cache_get( $user_id, 'userlogins' ) )
+			if ( is_numeric( $user_id ) ) {
+				$user_id = (int) $user_id;
+				if ( 0 === $user = wp_cache_get( $user_id, 'users' ) )
+					return new WP_Error( 'invalid-user', __('User does not exist' ) );
+				elseif ( $user )
+					return $user;
+				$sql = "SELECT * FROM {$this->db->users} WHERE ID = %s";
+			} elseif ( 'email' == $by ) {
+				$user_id = $this->sanitize_email( $user_id );
+				if ( 0 === $ID = wp_cache_get( $user_id, 'useremail' ) )
+					return new WP_Error( 'invalid-user', __('User does not exist' ) );
+				elseif ( $ID ) {
+					$args['by'] = false;
+					return $this->get_user( $ID, $args );
+				}
+				$sql = "SELECT * FROM {$this->db->users} WHERE user_email = %s";
+			} elseif ( 'nicename' == $by ) { // No cache?
+				$user_id = $this->sanitize_slug( $user_id );
+				$sql = "SELECT * FROM {$this->db->users} WHERE user_nicename = %s";
+			} else {
+				$user_id = $this->sanitize_user( $user_id );
+				if ( 0 === $ID = wp_cache_get( $user_id, 'userlogins' ) )
+					return new WP_Error( 'invalid-user', __('User does not exist' ) );
+				elseif ( $ID )
+					return $this->get_user( $ID, $args );
+				$sql = "SELECT * FROM {$this->db->users} WHERE user_login = %s";
+			}
+
+			if ( !$user_id )
+				return new WP_Error( 'ID', __('Invalid user id') );
+
+			$user = $this->db->get_row( $this->db->prepare( $sql, $user_id ), $output );
+
+			if ( $user ) {
+				if ( is_numeric( $user_id ) ); // [sic]
+				elseif ( 'email' == $by )
+					wp_cache_add($user_id, $ID, 'useremail');
+				else
+					wp_cache_add($user_id, $ID, 'userlogins' );
+			} else { // Cache non-existant users.
+				if ( is_numeric( $user_id ) )
+					wp_cache_add($user_id, 0, 'users');
+				elseif ( 'email' == $by )
+					wp_cache_add($user_id, 0, 'useremail');
+				else
+					wp_cache_add($user_id, 0, 'userlogins');
 				return new WP_Error( 'invalid-user', __('User does not exist' ) );
-			elseif ( $ID )
-				return $this->get_user( $ID, $args );
-			$sql = "SELECT * FROM {$this->db->users} WHERE user_login = %s";
-		}
-
-		if ( !$user_id )
-			return new WP_Error( 'ID', __('Invalid user id') );
-
-		$user = $this->db->get_row( $this->db->prepare( $sql, $user_id ), $output );
-
-		if ( $user ) {
-			if ( is_numeric( $user_id ) ); // [sic]
-			elseif ( 'email' == $by )
-				wp_cache_add($user_id, $ID, 'useremail');
-			else
-				wp_cache_add($user_id, $ID, 'userlogins' );
-		} else { // Cache non-existant users.
-			if ( is_numeric( $user_id ) )
-				wp_cache_add($user_id, 0, 'users');
-			elseif ( 'email' == $by )
-				wp_cache_add($user_id, 0, 'useremail');
-			else
-				wp_cache_add($user_id, 0, 'userlogins');
-			return new WP_Error( 'invalid-user', __('User does not exist' ) );
+			}
 		}
 
 		// append_meta does the user object caching
@@ -211,11 +224,11 @@ class WP_Users {
 			foreach ( array_keys($object) as $i )
 				$trans[$object[$i]->$id_field] =& $object[$i];
 			$ids = join(',', array_keys($trans));
-			if ( $metas = $backpress->get_results("SELECT $meta_field, meta_key, meta_value FROM $meta_table WHERE $meta_field IN ($ids)") )
+			if ( $metas = $this->db->get_results("SELECT $meta_field, meta_key, meta_value FROM $meta_table WHERE $meta_field IN ($ids)") )
 				foreach ( $metas as $meta ) :
 					$trans[$meta->$meta_field]->{$meta->meta_key} = maybe_unserialize( $meta->meta_value );
-					if ( strpos($meta->meta_key, $backpress->table_prefix) === 0 )
-						$trans[$meta->$meta_field]->{substr($meta->meta_key, strlen($backpress->table_prefix))} = maybe_unserialize( $meta->meta_value );
+					if ( strpos($meta->meta_key, $this->db->table_prefix) === 0 )
+						$trans[$meta->$meta_field]->{substr($meta->meta_key, strlen($this->db->table_prefix))} = maybe_unserialize( $meta->meta_value );
 				endforeach;
 			foreach ( array_keys($trans) as $i ) {
 				wp_cache_add( $i, $trans[$i], $cache_group );
@@ -226,11 +239,11 @@ class WP_Users {
 			}
 			return $object;
 		elseif ( $object ) :
-			if ( $metas = $backpress->get_results("SELECT meta_key, meta_value FROM $meta_table WHERE $meta_field = '{$object->$id_field}'") )
+			if ( $metas = $this->db->get_results("SELECT meta_key, meta_value FROM $meta_table WHERE $meta_field = '{$object->$id_field}'") )
 				foreach ( $metas as $meta ) :
 					$object->{$meta->meta_key} = maybe_unserialize( $meta->meta_value );
-					if ( strpos($meta->meta_key, $backpress->table_prefix) === 0 )
-						$object->{substr($meta->meta_key, strlen($backpress->table_prefix))} = maybe_unserialize( $meta->meta_value );
+					if ( strpos($meta->meta_key, $this->db->table_prefix) === 0 )
+						$object->{substr($meta->meta_key, strlen($this->db->table_prefix))} = maybe_unserialize( $meta->meta_value );
 				endforeach;
 			wp_cache_add( $object->$id_field, $object, $cache_group );
 			if ( 'users' == $cache_group ) {
@@ -241,7 +254,7 @@ class WP_Users {
 		endif;
 	}
 	
-	function update_meta( &$backpress, $args = null ) {
+	function update_meta( $args = null ) {
 		$defaults = array( 'id' => 0, 'meta_key' => null, 'meta_value' => null, 'meta_table' => 'usermeta', 'meta_field' => 'user_id', 'cache_group' => 'users' );
 		$args = wp_parse_args( $args, $defaults );
 		extract( $args, EXTR_SKIP );
@@ -268,7 +281,7 @@ class WP_Users {
 		if ( !$cur ) {
 			$this->db->insert( $this->db->$meta_table, array( $meta_field => $id, 'meta_key' => $meta_key, 'meta_value' => $_meta_value ) );
 		} elseif ( $cur->meta_value != $meta_value ) {
-			$backpress->update( $this->db->$meta_table, array( 'meta_value' => $_meta_value ), array( $meta_field => $id, 'meta_key' => $meta_key ) );
+			$this->db->update( $this->db->$meta_table, array( 'meta_value' => $_meta_value ), array( $meta_field => $id, 'meta_key' => $meta_key ) );
 		}
 
 		wp_cache_delete( $id, $cache_group );
