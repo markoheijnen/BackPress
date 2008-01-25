@@ -106,4 +106,18 @@ function sanitize_title_with_dashes($title) {
 	return $title;
 }
 
+function sanitize_user( $username, $strict = false ) {
+	$raw_username = $username;
+	$username = strip_tags($username);
+	// Kill octets
+	$username = preg_replace('|%([a-fA-F0-9][a-fA-F0-9])|', '', $username);
+	$username = preg_replace('/&.+?;/', '', $username); // Kill entities
+
+	// If strict, reduce to ASCII for max portability.
+	if ( $strict )
+		$username = preg_replace('|[^a-z0-9 _.\-@]|i', '', $username);
+
+	return apply_filters('sanitize_user', $username, $raw_username, $strict);
+}
+
 ?>
