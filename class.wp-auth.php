@@ -10,19 +10,19 @@ class WP_Auth {
 	var $current = 0;
 
 	function WP_Auth( &$db, $cookie_args ) {
-		$this->__construct( $db, $cookie_array );
+		$this->__construct( $db, $cookie_args );
 //		register_shutdown_function( array(&$this, '__destruct') );
 	}
 
 	function __construct( &$db, $cookie_args ) {
 		$this->db =& $db;
 
-		$cookie_array = wp_parse_args( $cookie_array, array( 'domain' => null, 'path' => null, 'name' => '', 'secure' => false ) );
+		$cookie_args = wp_parse_args( $cookie_args, array( 'domain' => null, 'path' => null, 'name' => '', 'secure' => false ) );
 
-		$this->cookie_domains = (array) $cookie_array['domain'];
-		$this->cookie_paths = (array) $cookie_array['path'];
-		$this->auth_cookie = (string) $cookie_array['name'];
-		$this->cookie_secure = (bool) $cookie_array['secure'];
+		$this->cookie_domains = (array) $cookie_args['domain'];
+		$this->cookie_paths = (array) $cookie_args['path'];
+		$this->auth_cookie = (string) $cookie_args['name'];
+		$this->cookie_secure = (bool) $cookie_args['secure'];
 	}
 
 //	function __destruct() {
@@ -60,7 +60,7 @@ class WP_Auth {
 			return $this->current;
 
 		// TODO: WP_User may not be generic enough for backpress - look into that
-		$this->current = new WP_User( $user_id );
+		$this->current = new BB_User( $user_id );
 
 		// WP add_action( 'set_current_user', 'setup_userdata', 1 );
 
@@ -114,6 +114,7 @@ class WP_Auth {
 	 */
 	function validate_auth_cookie( $cookie = null ) {
 		global $wp_users_object;
+
 		if ( empty($cookie) ) {
 			if ( empty($_COOKIE[$this->auth_cookie]) )
 				return false;
@@ -138,7 +139,7 @@ class WP_Auth {
 			return false;
 
 		$user = $wp_users_object->get_user($username);
-		if ( is_wp_user( $user ) )
+		if ( is_wp_error( $user ) )
 			return $user;
 
 		return $user->ID;
