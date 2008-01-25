@@ -242,7 +242,7 @@ class WP_Users {
 	}
 	
 	function update_meta( &$backpress, $args = null ) {
-		$defaults = array( 'id' => 0, 'meta_key' => null, 'meta_value' => null, 'meta_table' => 'usermeta', 'meta_field' => 'user_id', 'cache_group' = 'users' );
+		$defaults = array( 'id' => 0, 'meta_key' => null, 'meta_value' => null, 'meta_table' => 'usermeta', 'meta_field' => 'user_id', 'cache_group' => 'users' );
 		$args = wp_parse_args( $args, $defaults );
 		extract( $args, EXTR_SKIP );
 
