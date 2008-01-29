@@ -19,9 +19,11 @@ class WP_Auth {
 
 		$cookie_args = wp_parse_args( $cookie_args, array( 'domain' => null, 'path' => null, 'name' => '', 'secure' => false ) );
 
-		$this->cookie_domains = (array) $cookie_args['domain'];
-		$this->cookie_paths = (array) $cookie_args['path'];
 		$this->auth_cookie = (string) $cookie_args['name'];
+		if ( !$this->cookie_domains = (array) $cookie_args['domain'] )
+			$this->cookie_domains = array( false );
+		if ( !$this->cookie_paths = (array) $cookie_args['path'] )
+			$this->cookie_paths = array( '/' );
 		$this->cookie_secure = (bool) $cookie_args['secure'];
 	}
 
@@ -192,9 +194,16 @@ class WP_Auth {
 
 		do_action('set_auth_cookie', $cookie, $expiration);
 
-		foreach ( $this->cookie_domains as $domain )
-			foreach ( $this->cookie_paths as $path )
-				setcookie($this->auth_cookie, $cookie, $expire, $path, $domain);
+		foreach ( $this->cookie_domains as $domain ) {
+			if ( $domain ) {
+				foreach ( $this->cookie_paths as $path )
+					setcookie($this->auth_cookie, $cookie, $expire, $path, $domain);
+			} else {
+				foreach ( $this->cookie_paths as $path )
+					setcookie($this->auth_cookie, $cookie, $expire, $path );
+			}
+		}
+
 	}
 
 	/**
@@ -203,9 +212,15 @@ class WP_Auth {
 	 * @since 2.5
 	 */
 	function clear_auth_cookie() {
-		foreach ( $this->cookie_domains as $domain )
-			foreach ( $this->cookie_paths as $path )
-				setcookie($this->auth_cookie, ' ', time() - 31536000, $path, $domain);
+		foreach ( $this->cookie_domains as $domain ) {
+			if ( $domain ) {
+				foreach ( $this->cookie_paths as $path )
+					setcookie($this->auth_cookie, ' ', time() - 31536000, $path, $domain);
+			} else {
+				foreach ( $this->cookie_paths as $path )
+					setcookie($this->auth_cookie, ' ', time() - 31536000, $path );
+			}
+		}
 	}
 
 	/**
