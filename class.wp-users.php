@@ -33,7 +33,7 @@ class WP_Users {
 		extract( $args, EXTR_SKIP );
 
 		$ID = (int) $ID;
-	
+
 		$user_login = $this->sanitize_user( $user_login );
 		if ( !$user_login )
 			return new WP_Error( 'user_login', __('Invalid login name') );
@@ -45,7 +45,7 @@ class WP_Users {
 		if ( !$ID && $this->get_user( $user_nicename, array( 'by' => 'nicename' ) ) )
 			return new WP_Error( 'user_nicename', __('Nicename already exists') );
 
-		if ( !$user_email = $this->is_email( $user_email ) )
+		if ( !$this->is_email( $user_email ) )
 			return new WP_Error( 'user_email', __('Invalid email address') );
 		if ( !$ID && $this->get_user( $user_email, array( 'by' => 'email' ) ) )
 			return new WP_Error( 'user_email', __('Email already exists') );
@@ -53,9 +53,9 @@ class WP_Users {
 		$user_url = clean_url( $user_url );
 
 		if ( !$user_pass )
-			$user_pass = $this->generate_password();
+			$user_pass = WP_Pass::generate_password();
 		$plain_pass = $user_pass;
-		$user_pass  = $this->hash_password( $user_pass );
+		$user_pass  = WP_Pass::hash_password( $user_pass );
 
 		if ( !is_numeric($user_registered) )
 			$user_registered = backpress_gmt_strtotime( $user_registered );
@@ -113,7 +113,7 @@ class WP_Users {
 		$args = wp_parse_args( $args );
 
 		$user = $this->get_user( $ID, true, ARRAY_A );
-		if ( is_wp_error( $user ) )
+		if ( !$user || is_wp_error( $user ) )
 			return $user;
 
 		$args = array_merge( $user, $args );
@@ -127,6 +127,29 @@ class WP_Users {
 		do_action( __FUNCTION__, $r, $args );
 
 		return $r;
+	}
+
+	/**
+	 * set_password() - Updates the user's password with a new encrypted one
+	 *
+	 * For integration with other applications, this function can be
+	 * overwritten to instead use the other package password checking
+	 * algorithm.
+	 *
+	 * @since 2.5
+	 * @uses wp_hash_password() Used to encrypt the user's password before passing to the database
+	 *
+	 * @param string $password The plaintext new user password
+	 * @param int $user_id User ID
+	 */
+	function set_password( $password, $user_id ) {
+		$user = $this->get_user( $user_id );
+		if ( !$user || is_wp_error( $user ) )
+			return $user;
+
+		$user_id = $user->ID;
+		$hash = WP_Pass::hash_password($password);
+		$this->update_user( $user->ID, array( 'user_pass', $hash ) );
 	}
 
 	// $user_id can be user ID#, user_login, user_email (by specifying by = email)
@@ -147,14 +170,15 @@ class WP_Users {
 			if ( is_numeric( $user_id ) ) {
 				$user_id = (int) $user_id;
 				if ( 0 === $user = wp_cache_get( $user_id, 'users' ) )
-					return new WP_Error( 'invalid-user', __('User does not exist' ) );
+					return false;
 				elseif ( $user )
 					return $user;
 				$sql = "SELECT * FROM {$this->db->users} WHERE ID = %s";
 			} elseif ( 'email' == $by ) {
-				$user_id = $this->sanitize_email( $user_id );
+				if ( !$this->is_email( $user_id ) )
+					return false;
 				if ( 0 === $ID = wp_cache_get( $user_id, 'useremail' ) )
-					return new WP_Error( 'invalid-user', __('User does not exist' ) );
+					return false;
 				elseif ( $ID ) {
 					$args['by'] = false;
 					return $this->get_user( $ID, $args );
@@ -166,14 +190,14 @@ class WP_Users {
 			} else {
 				$user_id = $this->sanitize_user( $user_id );
 				if ( 0 === $ID = wp_cache_get( $user_id, 'userlogins' ) )
-					return new WP_Error( 'invalid-user', __('User does not exist' ) );
+					return false;
 				elseif ( $ID )
 					return $this->get_user( $ID, $args );
 				$sql = "SELECT * FROM {$this->db->users} WHERE user_login = %s";
 			}
 
 			if ( !$user_id )
-				return new WP_Error( 'ID', __('Invalid user id') );
+				return false;
 
 			$user = $this->db->get_row( $this->db->prepare( $sql, $user_id ), $output );
 
@@ -190,7 +214,7 @@ class WP_Users {
 					wp_cache_add($user_id, 0, 'useremail');
 				else
 					wp_cache_add($user_id, 0, 'userlogins');
-				return new WP_Error( 'invalid-user', __('User does not exist' ) );
+				return false;
 			}
 		}
 
@@ -203,7 +227,7 @@ class WP_Users {
 	function delete_user( $user_id ) {
 		$user = $this->get_user( $user_id );
 
-		if ( is_wp_error( $user ) )
+		if ( !$user || is_wp_error( $user ) )
 			return $user;
 
 		do_action( 'pre_' . __FUNCTION__, $user->ID );
@@ -270,7 +294,7 @@ class WP_Users {
 		extract( $args, EXTR_SKIP );
 
 		$user = $this->get_user( $id );
-		if ( is_wp_error($user) )
+		if ( !$user || is_wp_error($user) )
 			return $user;
 
 		$id = (int) $user->ID;
@@ -289,11 +313,13 @@ class WP_Users {
 		$_meta_value = maybe_serialize( $meta_value );
 
 		$cur = $this->db->get_row( $this->db->prepare( "SELECT * FROM {$this->db->$meta_table} WHERE $meta_field = %d AND meta_key = %s", $id, $meta_key ) );
+
 		if ( !$cur ) {
 			$this->db->insert( $this->db->$meta_table, array( $meta_field => $id, 'meta_key' => $meta_key, 'meta_value' => $_meta_value ) );
 		} elseif ( $cur->meta_value != $meta_value ) {
 			$this->db->update( $this->db->$meta_table, array( 'meta_value' => $_meta_value ), array( $meta_field => $id, 'meta_key' => $meta_key ) );
 		}
+
 
 		wp_cache_delete( $id, $cache_group );
 

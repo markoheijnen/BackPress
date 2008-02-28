@@ -17,7 +17,7 @@ class WP_User {
 
 		$this->data = $wp_users_object->get_user( $id );
 
-		if ( empty($this->data->ID) )
+		if ( !$this->data || empty($this->data->ID) )
 			return;
 
 		foreach ( get_object_vars($this->data) as $key => $value )
@@ -81,7 +81,7 @@ class WP_User {
 
 	function update_user() {
 		global $wp_users_object;
-		$wp_users_object->update_meta( $this->ID, $this->cap_key, $this->caps );
+		$wp_users_object->update_meta( array( 'id' => $this->ID, 'meta_key' => $this->cap_key, 'meta_value' => $this->caps ) );
 		$this->get_role_caps();
 //		$this->update_user_level_from_caps(); // WP
 	}
