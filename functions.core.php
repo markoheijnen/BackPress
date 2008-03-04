@@ -120,4 +120,19 @@ function sanitize_user( $username, $strict = false ) {
 	return apply_filters('sanitize_user', $username, $raw_username, $strict);
 }
 
+function backpress_gmt_strtotime( $string ) {
+	if ( is_numeric($string) )
+		return $string;
+	if ( !is_string($string) )
+		return -1;
+
+	if ( stristr($string, 'utc') || stristr($string, 'gmt') || stristr($string, '+0000') )
+		return strtotime($string);
+
+	if ( -1 == $time = strtotime($string . ' +0000') )
+		return strtotime($string);
+
+	return $time;
+}
+
 ?>

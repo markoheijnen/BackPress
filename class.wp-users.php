@@ -73,10 +73,10 @@ class WP_Users {
 		if ( $ID && NULL !== $this->db->get_var( "SELECT ID FROM {$this->db->users} WHERE ID = '$ID'" ) ) {
 			unset($args['ID']);
 			unset($args['user_registered']);
-			$db_return = $this->db->update( $this->db->users, compact( array_keys($args) ), compact('ID') );
+			$db_return = $this->db->update( $this->db->users, compact( array_keys($defaults) ), compact('ID') );
 		}
 		if ( $db_return === null ) { 
-			$db_return = $this->db->insert( $this->db->users, compact( array_keys($args) ) );
+			$db_return = $this->db->insert( $this->db->users, compact( array_keys($defaults) ) );
 		}
 	
 		if ( !$db_return )
@@ -112,7 +112,8 @@ class WP_Users {
 	function update_user( $ID, $args = null ) {
 		$args = wp_parse_args( $args );
 
-		$user = $this->get_user( $ID, true, ARRAY_A );
+		$args['output'] = ARRAY_A;
+		$user = $this->get_user( $ID, $args );
 		if ( !$user || is_wp_error( $user ) )
 			return $user;
 
@@ -169,11 +170,17 @@ class WP_Users {
 		} else {
 			if ( is_numeric( $user_id ) ) {
 				$user_id = (int) $user_id;
-				if ( 0 === $user = wp_cache_get( $user_id, 'users' ) )
+				if ( 0 === $user = wp_cache_get( $user_id, 'users' ) ) {
 					return false;
-				elseif ( $user )
+				} elseif ( $user ) {
+					switch ( $output ) {
+						case OBJECT  : return $user; break;
+						case ARRAY_A : return get_object_vars($user); break;
+						case ARRAY_N : return array_values(get_object_vars($user)); break;
+					}
 					return $user;
-				$sql = "SELECT * FROM {$this->db->users} WHERE ID = %s";
+				}
+				$sql = "SELECT * FROM {$this->db->users} WHERE ID = %d";
 			} elseif ( 'email' == $by ) {
 				if ( !$this->is_email( $user_id ) )
 					return false;
@@ -199,7 +206,7 @@ class WP_Users {
 			if ( !$user_id )
 				return false;
 
-			$user = $this->db->get_row( $this->db->prepare( $sql, $user_id ), $output );
+			$user = $this->db->get_row( $this->db->prepare( $sql, $user_id ) );
 
 			if ( $user ) {
 				if ( is_numeric( $user_id ) ); // [sic]
@@ -220,6 +227,12 @@ class WP_Users {
 
 		// append_meta does the user object caching
 		$user = $this->append_meta( $user );
+
+		switch ( $output ) {
+			case OBJECT  : return $user; break;
+			case ARRAY_A : return get_object_vars($user); break;
+			case ARRAY_N : return array_values(get_object_vars($user)); break;
+		}
 
 		return $user;
 	}
