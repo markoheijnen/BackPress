@@ -26,7 +26,7 @@ class BP_Roles {
 		$this->role_objects = array();
 		$this->role_names =  array();
 		foreach ($this->roles as $role => $data) {
-			$this->role_objects[$role] = new BP_Role($role, $this->roles[$role]['capabilities']);
+			$this->role_objects[$role] = new BP_Role($role, $this->roles[$role]['capabilities'], &$this);
 			$this->role_names[$role] = $this->roles[$role]['name'];
 		}
 	}
@@ -43,7 +43,7 @@ class BP_Roles {
 			'name' => $display_name,
 			'capabilities' => $capabilities);
 
-		$this->role_objects[$role] = new BP_Role($role, $capabilities);
+		$this->role_objects[$role] = new BP_Role($role, $capabilities, &$this);
 		$this->role_names[$role] = $display_name;
 		return $this->role_objects[$role];
 	}
@@ -87,26 +87,25 @@ class BP_Roles {
 }
 
 class BP_Role {
+	var $bp_roles;
+
 	var $name;
 	var $capabilities;
 
-	function BP_Role($role, $capabilities) {
+	function BP_Role($role, $capabilities, &$bp_roles) {
+		$this->bp_roles =& $bp_roles;
 		$this->name = $role;
 		$this->capabilities = $capabilities;
 	}
 
 	function add_cap($cap, $grant = true) {
-		global $wp_roles;
-
 		$this->capabilities[$cap] = $grant;
-		$wp_roles->add_cap($this->name, $cap, $grant);
+		$this->bp_roles->add_cap($this->name, $cap, $grant);
 	}
 
 	function remove_cap($cap) {
-		global $wp_roles;
-
 		unset($this->capabilities[$cap]);
-		$wp_roles->remove_cap($this->name, $cap);
+		$this->bp_roles->remove_cap($this->name, $cap);
 	}
 
 	function has_cap($cap) {
