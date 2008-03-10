@@ -43,7 +43,6 @@ class WP_Auth {
 	 * to edit and perform actions on users who aren't signed in.
 	 *
 	 * @since 2.0.4
-	 * @global object $current_user The current user object which holds the user data.
 	 * @uses do_action() Calls 'set_current_user' hook after setting the current user.
 	 *
 	 * @param int $id User ID
@@ -72,7 +71,7 @@ class WP_Auth {
 	}
 
 	/**
-	 * get_current_user() - Populate global variables with information about the currently logged in user
+	 * get_current_user() - Populate variables with information about the currently logged in user
 	 *
 	 * Will set the current user, if the current user is not set. The current
 	 * user will be set to the logged in person. If no user is logged in, then
