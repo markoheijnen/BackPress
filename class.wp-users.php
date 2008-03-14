@@ -78,16 +78,18 @@ class WP_Users {
 		if ( $db_return === null ) { 
 			$db_return = $this->db->insert( $this->db->users, compact( array_keys($defaults) ) );
 		}
-	
+
 		if ( !$db_return )
 			return new WP_Error( 'WP_Users::_put_user', __('Query failed') );
+
+		if ( !$ID )
+			$ID = $db_return;
 
 		// Cache the result
 		$user = (object) compact( array_keys($defaults) );
 		$user = $this->append_meta( $user );
 
 		$args = compact( array_keys($args) );
-
 		$args['plain_pass'] = $plain_pass;
 
 		do_action( __FUNCTION__, $args );
