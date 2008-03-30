@@ -49,11 +49,20 @@ class WP_Pass {
 	 * @param string $hash Hash of the user's password to check against.
 	 * @return bool False, if the $password does not match the hashed password
 	 */
-	function check_password($password, $hash) {
+	function check_password($password, $hash, $user_id = '') {
 		global $wp_hasher;
 
-		if ( strlen($hash) <= 32 )
-			return ( $hash == md5($password) );
+		// If the hash is still md5... 
+		if ( strlen($hash) <= 32 ) { 
+			$check = ( $hash == md5($password) ); 
+			if ( $check && $user_id ) { 
+				// Rehash using new hash. 
+				wp_set_password($password, $user_id); 
+				$hash = wp_hash_password($password); 
+			} 
+			
+			return apply_filters('check_password', $check, $password, $hash, $user_id); 
+		}
 
 		// If the stored hash is longer than an MD5, presume the
 		// new style phpass portable hash.
@@ -64,7 +73,7 @@ class WP_Pass {
 		}
 
 		$check = $wp_hasher->CheckPassword($password, $hash);
-		return apply_filters('check_password', $check, $password, $hash);
+		return apply_filters('check_password', $check, $password, $hash, $user_id);
 	}
 
 	/**
