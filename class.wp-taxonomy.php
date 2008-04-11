@@ -5,7 +5,7 @@ class WP_Taxonomy {
 	var $taxonomioes = array();
 
 	function WP_Taxonomy( &$db ) {
-		$this->__construct( &$db );
+		$this->__construct( $db );
 		register_shutdown_function( array(&$this, '__destruct') );
 	}
 
