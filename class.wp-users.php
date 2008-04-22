@@ -83,7 +83,7 @@ class WP_Users {
 			return new WP_Error( 'WP_Users::_put_user', __('Query failed') );
 
 		if ( !$ID )
-			$ID = $db_return;
+			$ID = $this->db->insert_id;
 
 		// Cache the result
 		$user = (object) compact( array_keys($defaults) );
