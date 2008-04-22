@@ -152,7 +152,7 @@ class WP_Users {
 
 		$user_id = $user->ID;
 		$hash = WP_Pass::hash_password($password);
-		$this->update_user( $user->ID, array( 'user_pass', $hash ) );
+		$this->update_user( $user->ID, array( 'user_pass' => $password ) );
 	}
 
 	// $user_id can be user ID#, user_login, user_email (by specifying by = email)

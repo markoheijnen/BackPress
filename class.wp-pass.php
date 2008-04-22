@@ -50,7 +50,7 @@ class WP_Pass {
 	 * @return bool False, if the $password does not match the hashed password
 	 */
 	function check_password($password, $hash, $user_id = '') {
-		global $wp_hasher, $wp_users_object;;
+		global $wp_hasher, $wp_users_object;
 		// If the hash is still md5... 
 		if ( strlen($hash) <= 32 ) { 
 			$check = ( $hash == md5($password) ); 
