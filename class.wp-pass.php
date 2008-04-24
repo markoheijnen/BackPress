@@ -78,16 +78,15 @@ class WP_Pass {
 	/**
 	 * generate_password() - Generates a random password drawn from the defined set of characters
 	 *
-	 * @since 2.5
+	 * @since WP 2.5
 	 *
 	 * @return string The random password
 	 **/
-	function generate_password( $length = 7 ) {
-		$chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-		$length = (int) $length;
+	function generate_password($length = 12) {
+		$chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()";
 		$password = '';
 		for ( $i = 0; $i < $length; $i++ )
-			$password .= substr($chars, mt_rand(0, 61), 1);
+			$password .= substr($chars, mt_rand(0, 71), 1); // strlen($chars) == 72
 		return $password;
 	}
 }
