@@ -120,7 +120,11 @@ class WP_Auth {
 			$cookie = $_COOKIE[$this->auth_cookie];
 		}
 
-		list($username, $expiration, $hmac) = explode('|', $cookie);
+		$cookie_elements = explode('|', $cookie);
+		if ( count($cookie_elements) != 3 )
+			return false;
+
+		list($username, $expiration, $hmac) = $cookie_elements;
 
 		$expired = $expiration;
 
@@ -131,8 +135,8 @@ class WP_Auth {
 		if ( $expired < time() )
 			return false;
 
-		$key  = wp_hash($username . $expiration);
-		$hash = hash_hmac('md5', $username . $expiration, $key);
+		$key  = wp_hash($username . '|' . $expiration);
+		$hash = hash_hmac('md5', $username . '|' . $expiration, $key);
 	
 		if ( $hmac != $hash )
 			return false;
@@ -160,8 +164,8 @@ class WP_Auth {
 		if ( !$user || is_wp_error($user) )
 			return $user;
 
-		$key  = wp_hash($user->user_login . $expiration);
-		$hash = hash_hmac('md5', $user->user_login . $expiration, $key);
+		$key  = wp_hash($user->user_login . '|' . $expiration);
+		$hash = hash_hmac('md5', $user->user_login . '|' . $expiration, $key);
 
 		$cookie = $user->user_login . '|' . $expiration . '|' . $hash;
 
