@@ -82,11 +82,14 @@ class WP_Pass {
 	 *
 	 * @return string The random password
 	 **/
-	function generate_password($length = 12) {
-		$chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()";
+	function generate_password($length = 12, $special_chars = true) {
+		$chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+		if ( $special_chars )
+			$chars .= "!@#$%^&*()";
 		$password = '';
+		$length = strlen($chars) - 1;
 		for ( $i = 0; $i < $length; $i++ )
-			$password .= substr($chars, mt_rand(0, 71), 1); // strlen($chars) == 72
+			$password .= substr($chars, $length, 1);
 		return $password;
 	}
 }
