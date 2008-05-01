@@ -216,7 +216,9 @@ class WP_Object_Cache {
 			$data = '';
 
 		$this->cache[$group][$id] = $data;
-		unset ($this->non_existant_objects[$group][$id]);
+
+		if(isset($this->non_existant_objects[$group][$id]))
+			unset ($this->non_existant_objects[$group][$id]);
 
 		return true;
 	}
@@ -279,5 +281,3 @@ class WP_Object_Cache {
 		return true;
 	}
 }
-
-?>
