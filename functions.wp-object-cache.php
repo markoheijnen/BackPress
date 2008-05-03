@@ -67,10 +67,10 @@ function wp_cache_delete($id, $flag = '') {
  *
  * @return bool Always returns true
  */
-function wp_cache_flush() {
+function wp_cache_flush( $group = null ) {
 	global $wp_object_cache;
 
-	return $wp_object_cache->flush();
+	return $wp_object_cache->flush( $group );
 }
 
 /**

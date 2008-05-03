@@ -123,8 +123,17 @@ class WP_Object_Cache {
 	 *
 	 * @return bool Always returns true
 	 */
-	function flush() {
-		$this->cache = array ();
+	function flush( $group = null ) {
+		if ( is_null($group) ) {
+			$this->cache = array();
+			$this->non_existant_objects = array();
+			return true;
+		}
+
+		if ( isset($this->cache[$group]) )
+			$this->cache[$group] = array();
+		if ( isset($this->non_existant_objects[$group]) )
+			$this->non_existant_objects[$group] = array();
 
 		return true;
 	}
