@@ -227,6 +227,9 @@ class WP_Users {
 			}
 		}
 
+		if ( is_array( $user ) ) // each element has already been through the below
+			return $user;
+
 		// append_meta does the user object caching
 		$user = $this->append_meta( $user );
 
@@ -271,7 +274,7 @@ class WP_Users {
 			foreach ( array_keys($object) as $i )
 				$trans[$object[$i]->$id_field] =& $object[$i];
 			$ids = join(',', array_keys($trans));
-			if ( $metas = $this->db->get_results("SELECT $meta_field, meta_key, meta_value FROM {$this->db->$meta_table} WHERE $meta_field IN ($ids)") ) {
+			if ( $metas = $this->db->get_results("SELECT $meta_field, meta_key, meta_value FROM {$this->db->$meta_table} WHERE $meta_field IN ($ids) /* WP_Users::append_meta */") ) {
 				foreach ( $metas as $meta ) {
 					$trans[$meta->$meta_field]->{$meta->meta_key} = maybe_unserialize( $meta->meta_value );
 					if ( strpos($meta->meta_key, $this->db->prefix) === 0 )
@@ -287,7 +290,7 @@ class WP_Users {
 			}
 			return $object;
 		} elseif ( $object ) {
-			if ( $metas = $this->db->get_results("SELECT meta_key, meta_value FROM {$this->db->$meta_table} WHERE $meta_field = '{$object->$id_field}'") ) {
+			if ( $metas = $this->db->get_results("SELECT meta_key, meta_value FROM {$this->db->$meta_table} WHERE $meta_field = '{$object->$id_field}' /* WP_Users::append_meta */") ) {
 				foreach ( $metas as $meta ) {
 					$object->{$meta->meta_key} = maybe_unserialize( $meta->meta_value );
 					if ( strpos($meta->meta_key, $this->db->prefix) === 0 )
