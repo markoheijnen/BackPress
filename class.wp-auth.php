@@ -23,9 +23,9 @@ class WP_Auth {
 		$cookie_args = wp_parse_args( $cookie_args, array( 'domain' => null, 'path' => null, 'name' => '', 'secure' => false ) );
 
 		$this->auth_cookie = (string) $cookie_args['name'];
-		if ( !$this->cookie_domains = (array) $cookie_args['domain'] )
+		if ( !$this->cookie_domains = array_unique( (array) $cookie_args['domain'] ) )
 			$this->cookie_domains = array( false );
-		if ( !$this->cookie_paths = (array) $cookie_args['path'] )
+		if ( !$this->cookie_paths = array_unique( (array) $cookie_args['path'] ) )
 			$this->cookie_paths = array( '/' );
 		$this->cookie_secure = (bool) $cookie_args['secure'];
 	}
