@@ -1,6 +1,6 @@
 <?php
 
-class WP_Taxonomy {
+class WP_Taxonomy { // [WP7919]
 	var $db;
 	var $taxonomioes = array();
 
@@ -1172,7 +1172,6 @@ class WP_Taxonomy {
 		do_action("created_$taxonomy", $term_id, $tt_id);
 
 		return array('term_id' => $term_id, 'term_taxonomy_id' => $tt_id);
-
 	}
 
 	/**
@@ -1796,5 +1795,3 @@ class WP_Taxonomy {
 	function set_children_cache( $taxonomy, $children ) {}
 	function delete_children_cache( $taxonomy ) {}
 }
-
-?>
