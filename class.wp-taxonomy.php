@@ -37,6 +37,7 @@ class WP_Taxonomy {
 	function get_object_taxonomies($object_type) {
 		$object_type = (array) $object_type;
 
+		// WP DIFF
 		$taxonomies = array();
 		foreach ( $this->taxonomies as $taxonomy ) {
 			if ( array_intersect($object_type, (array) $taxonomy->object_type) )
@@ -1502,22 +1503,6 @@ class WP_Taxonomy {
 	// Cache
 	//
 
-	function cache_add( $key, $data, $group ) {
-		return wp_cache_add( $key, $data, $group );
-	}
-
-	function cache_get( $key, $group ) {
-		return wp_cache_get( $key, $group );
-	}
-
-	function cache_set( $key, $data, $group ) {
-		return wp_cache_set( $key, $data, $group );
-	}
-
-	function cache_delete( $key, $group ) {
-		return wp_cache_delete( $key, $group );
-	}
-
 	/**
 	 * clean_object_term_cache() - Removes the taxonomy relationship to terms from the cache.
 	 *
@@ -1580,7 +1565,7 @@ class WP_Taxonomy {
 		foreach ( $taxonomies as $taxonomy ) {
 			wp_cache_delete('all_ids', $taxonomy);
 			wp_cache_delete('get', $taxonomy);
-			delete_option("{$taxonomy}_children");
+			$this->delete_children_cache($taxonomy);
 		}
 
 		wp_cache_delete('get_terms', 'terms');
@@ -1717,7 +1702,7 @@ class WP_Taxonomy {
 	function _get_term_hierarchy($taxonomy) {
 		if ( !$this->is_taxonomy_hierarchical($taxonomy) )
 			return array();
-		$children = get_option("{$taxonomy}_children");
+		$children = $this->get_children_cache($taxonomy);
 		if ( is_array($children) )
 			return $children;
 
@@ -1727,7 +1712,7 @@ class WP_Taxonomy {
 			if ( $term->parent > 0 )
 				$children[$term->parent][] = $term->term_id;
 		}
-		update_option("{$taxonomy}_children", $children);
+		$this->set_children_cache($taxonomy, $children);
 
 		return $children;
 	}
@@ -1804,68 +1789,12 @@ class WP_Taxonomy {
 	 * @return null Will break from function if conditions are not met.
 	 */
 	function _pad_term_counts(&$terms, $taxonomy) {
-		// This function only works for post categories.
-		if ( 'category' != $taxonomy )
-			return;
-
-		$term_hier = $this->_get_term_hierarchy($taxonomy);
-
-		if ( empty($term_hier) )
-			return;
-
-		$term_items = array();
-
-		foreach ( $terms as $key => $term ) {
-			$terms_by_id[$term->term_id] = & $terms[$key];
-			$term_ids[$term->term_taxonomy_id] = $term->term_id;
-		}
-
-		// Get the object and term ids and stick them in a lookup table
-		$results = $this->db->get_results("SELECT object_id, term_taxonomy_id FROM {$this->db->term_relationships} INNER JOIN {$this->db->posts} ON object_id = ID WHERE term_taxonomy_id IN (".join(',', array_keys($term_ids)).") AND post_type = 'post' AND post_status = 'publish'");
-		foreach ( $results as $row ) {
-			$id = $term_ids[$row->term_taxonomy_id];
-			++$term_items[$id][$row->object_id];
-		}
-
-		// Touch every ancestor's lookup row for each post in each term
-		foreach ( $term_ids as $term_id ) {
-			$child = $term_id;
-			while ( $parent = $terms_by_id[$child]->parent ) {
-				if ( !empty($term_items[$term_id]) )
-					foreach ( $term_items[$term_id] as $item_id => $touches )
-						++$term_items[$parent][$item_id];
-				$child = $parent;
-			}
-		}
-
-		// Transfer the touched cells 
-		foreach ( (array) $term_items as $id => $items )
-			if ( isset($terms_by_id[$id]) )
-				$terms_by_id[$id]->count = count($items);
+		return;
 	}
 
-	//
-	// Default callbacks
-	//
-
-	/**
-	 * _update_post_term_count() - Will update term count based on posts
-	 * 
-	 * Private function for the default callback for post_tag and category taxonomies.
-	 *
-	 * @package WordPress
-	 * @subpackage Taxonomy
-	 * @access private
-	 * @since 2.3
-	 *
-	 * @param array $terms List of Term IDs
-	 */
-	function _update_post_term_count( $terms ) {
-		foreach ( $terms as $term ) {
-			$count = $this->db->get_var( $this->db->prepare( "SELECT COUNT(*) FROM {$this->db->term_relationships}, {$this->db->posts} WHERE {$this->db->posts}.ID = {$this->db->term_relationships}.object_id AND post_status = 'publish' AND post_type = 'post' AND term_taxonomy_id = %d", $term ) );
-			$this->db->update( $this->db->term_taxonomy, compact( 'count' ), array( 'term_taxonomy_id' => $term ) );
-		}
-	}
+	function get_children_cache( $taxonomy ) { return false; }
+	function set_children_cache( $taxonomy, $children ) {}
+	function delete_children_cache( $taxonomy ) {}
 }
 
 ?>
