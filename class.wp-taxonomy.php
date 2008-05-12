@@ -215,7 +215,7 @@ class WP_Taxonomy {
 	 * filters.
 	 *
 	 * $term ID must be part of $taxonomy, to get from the database. Failure, might be
-	 * able to be captured by the hooks. Failure would be the same value as $wpdb returns for the
+	 * able to be captured by the hooks. Failure would be the same value as WPDB returns for the
 	 * get_row method.
 	 *
 	 * There are two hooks, one is specifically for each term, named 'get_term', and the second is
@@ -1135,13 +1135,15 @@ class WP_Taxonomy {
 		}
 
 		if ( ! $term_id = $this->is_term($slug) ) {
-			$this->db->insert( $this->db->terms, compact( 'name', 'slug', 'term_group' ) );
+			if ( false === $this->db->insert( $this->db->terms, compact( 'name', 'slug', 'term_group' ) ) )
+				return new WP_Error('db_insert_error', __('Could not insert term into the database'), $this->db->last_error);
 			$term_id = (int) $this->db->insert_id;
 		} else if ( $this->is_taxonomy_hierarchical($taxonomy) && !empty($parent) ) {
 			// If the taxonomy supports hierarchy and the term has a parent, make the slug unique
 			// by incorporating parent slugs.
 			$slug = $this->unique_term_slug($slug, (object) $args);
-			$this->db->insert( $this->db->terms, compact( 'name', 'slug', 'term_group' ) );
+			if ( false === $this->db->insert( $this->db->terms, compact( 'name', 'slug', 'term_group' ) ) )
+				return new WP_Error('db_insert_error', __('Could not insert term into the database'), $this->db->last_error);
 			$term_id = (int) $this->db->insert_id;
 		}
 
@@ -1169,6 +1171,7 @@ class WP_Taxonomy {
 		do_action("created_$taxonomy", $term_id, $tt_id);
 
 		return array('term_id' => $term_id, 'term_taxonomy_id' => $tt_id);
+
 	}
 
 	/**
@@ -1200,7 +1203,7 @@ class WP_Taxonomy {
 			$terms = array($terms);
 
 		if ( ! $append )
-			$old_terms = $this->get_object_terms($object_id, $taxonomy, 'fields=tt_ids');
+			$old_terms =  $this->get_object_terms($object_id, $taxonomy, 'fields=tt_ids');
 
 		$tt_ids = array();
 		$term_ids = array();
@@ -1228,9 +1231,21 @@ class WP_Taxonomy {
 			$delete_terms = array_diff($old_terms, $tt_ids);
 			if ( $delete_terms ) {
 				$in_delete_terms = "'" . implode("', '", $delete_terms) . "'";
-				$this->db->query("DELETE FROM {$this->db->term_relationships} WHERE object_id = '$object_id' AND term_taxonomy_id IN ($in_delete_terms)");
+				$this->db->query( $this->db->prepare("DELETE FROM {$this->db->term_relationships} WHERE object_id = %d AND term_taxonomy_id IN ($in_delete_terms)", $object_id) );
 				$this->update_term_count($delete_terms, $taxonomy);
 			}
+		}
+
+		$t = $this->get_taxonomy($taxonomy);
+		if ( ! $append && isset($t->sort) && $t->sort ) {
+			$values = array();
+			$term_order = 0;
+			$final_term_ids = $this->get_object_terms($object_id, $taxonomy, 'fields=tt_ids');
+			foreach ( $term_ids as $term_id )
+				if ( in_array($term_id, $final_term_ids) )
+					$values[] = $this->db->prepare( "(%d, %d, %d)", $object_id, $term_id, ++$term_order);
+			if ( $values )
+				$this->db->query("INSERT INTO {$this->db->term_relationships} (object_id, term_taxonomy_id, term_order) VALUES " . join(',', $values) . " ON DUPLICATE KEY UPDATE term_order = VALUES(term_order)");
 		}
 
 		return $tt_ids;
