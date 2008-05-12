@@ -35,9 +35,11 @@ class WP_Taxonomy {
 	 * @return array The names of all taxonomy of $object_type.
 	 */
 	function get_object_taxonomies($object_type) {
+		$object_type = (array) $object_type;
+
 		$taxonomies = array();
 		foreach ( $this->taxonomies as $taxonomy ) {
-			if ( $object_type === $taxonomy->object_type )
+			if ( array_intersect($object_type, (array) $taxonomy->object_type) )
 				$taxonomies[] = $taxonomy->name;
 		}
 
@@ -242,8 +244,9 @@ class WP_Taxonomy {
 	 * exist then WP_Error will be returned.
 	 */
 	function &get_term($term, $taxonomy, $output = OBJECT, $filter = 'raw') {
+		$null = null;
 		if ( empty($term) )
-			return null;
+			return $null;
 
 		if ( !$this->is_taxonomy($taxonomy) )
 			return new WP_Error('invalid_taxonomy', __('Invalid Taxonomy'));
@@ -258,7 +261,7 @@ class WP_Taxonomy {
 				wp_cache_add($term, $_term, $taxonomy);
 			}
 		}
-		
+
 		$_term = apply_filters('get_term', $_term, $taxonomy);
 		$_term = apply_filters("get_$taxonomy", $_term, $taxonomy);
 		$_term = $this->sanitize_term($_term, $taxonomy, $filter);
@@ -492,7 +495,7 @@ class WP_Taxonomy {
 		}
 
 		foreach ( $taxonomies as $taxonomy ) {
-			if ( !$this->is_taxonomy($taxonomy) )
+			if ( ! $this->is_taxonomy($taxonomy) )
 				return new WP_Error('invalid_taxonomy', __('Invalid Taxonomy'));
 		}
 
@@ -502,9 +505,10 @@ class WP_Taxonomy {
 			'hide_empty' => true, 'exclude' => '', 'include' => '',
 			'number' => '', 'fields' => 'all', 'slug' => '', 'parent' => '',
 			'hierarchical' => true, 'child_of' => 0, 'get' => '', 'name__like' => '',
-			'pad_counts' => false);
+			'pad_counts' => false, 'offset' => '', 'search' => '');
 		$args = wp_parse_args( $args, $defaults );
 		$args['number'] = absint( $args['number'] );
+		$args['offset'] = absint( $args['offset'] );
 		if ( !$single_taxonomy || !$this->is_taxonomy_hierarchical($taxonomies[0]) ||
 			'' != $args['parent'] ) {
 			$args['child_of'] = 0;
@@ -532,7 +536,9 @@ class WP_Taxonomy {
 				return $empty_array;
 		}
 
-		$key = md5( serialize( $args ) . serialize( $taxonomies ) );
+		// $args can be whatever, only use the args defined in defaults to compute the key
+		$key = md5( serialize( compact(array_keys($defaults)) ) . serialize( $taxonomies ) );
+
 		if ( $cache = wp_cache_get( 'get_terms', 'terms' ) ) {
 			if ( isset( $cache[ $key ] ) )
 				return apply_filters('get_terms', $cache[$key], $taxonomies, $args);
@@ -587,7 +593,7 @@ class WP_Taxonomy {
 		$where .= $exclusions;
 
 		if ( !empty($slug) ) {
-			$slug = $this->sanitize_term_slug($slug);
+			$slug =  $this->sanitize_term_slug($slug);
 			$where .= " AND t.slug = '$slug'";
 		}
 
@@ -602,24 +608,34 @@ class WP_Taxonomy {
 		if ( $hide_empty && !$hierarchical )
 			$where .= ' AND tt.count > 0';
 
-		if ( !empty($number) )
-			$number = 'LIMIT ' . $number;
-		else
+		if ( !empty($number) ) {
+			if( $offset )
+				$number = 'LIMIT ' . $offset . ',' . $number;
+			else
+				$number = 'LIMIT ' . $number;
+
+		} else
 			$number = '';
 
+		if ( !empty($search) ) {
+			$search = like_escape($search);
+			$where .= " AND (t.name LIKE '%$search%')";
+		}
+
+		$select_this = '';
 		if ( 'all' == $fields )
 			$select_this = 't.*, tt.*';
 		else if ( 'ids' == $fields )
 			$select_this = 't.term_id';
 		else if ( 'names' == $fields )
-			$select_this == 't.name';
+			$select_this = 't.name';
 
 		$query = "SELECT $select_this FROM {$this->db->terms} AS t INNER JOIN {$this->db->term_taxonomy} AS tt ON t.term_id = tt.term_id WHERE tt.taxonomy IN ($in_taxonomies) $where ORDER BY $orderby $order $number";
 
 		if ( 'all' == $fields ) {
 			$terms = $this->db->get_results($query);
 			$this->update_term_cache($terms);
-		} else if ( 'ids' == $fields ) {
+		} else if ( ('ids' == $fields) || ('names' == $fields) ) {
 			$terms = $this->db->get_col($query);
 		}
 
@@ -763,8 +779,11 @@ class WP_Taxonomy {
 	 * @return mixed sanitized field
 	 */
 	function sanitize_term_field($field, $value, $term_id, $taxonomy, $context) {
-		if ( 'parent' == $field  || 'term_id' == $field || 'count' == $field || 'term_group' == $field )
+		if ( 'parent' == $field  || 'term_id' == $field || 'count' == $field || 'term_group' == $field ) {
 			$value = (int) $value;
+			if ( $value < 0 )
+				$value = 0;
+		}
 
 		if ( 'raw' == $context )
 			return $value;
@@ -779,10 +798,7 @@ class WP_Taxonomy {
 		} else if ( 'db' == $context ) {
 			$value = apply_filters("pre_term_$field", $value, $taxonomy);
 			$value = apply_filters("pre_${taxonomy}_$field", $value);
-			// Back compat filters
-			if ( 'slug' == $field )
-				$value = apply_filters('pre_category_nicename', $value);
-				
+			// WP DIFF
 		} else if ( 'rss' == $context ) {
 			$value = apply_filters("term_${field}_rss", $value, $taxonomy);
 			$value = apply_filters("${taxonomy}_${field}_rss", $value);
@@ -825,8 +841,7 @@ class WP_Taxonomy {
 		if ( $ignore_empty )
 			$where = 'AND count > 0';
 
-		$taxonomy = $this->db->escape( $taxonomy );
-		return $this->db->get_var("SELECT COUNT(*) FROM {$this->db->term_taxonomy} WHERE taxonomy = '$taxonomy' $where");
+		return $this->db->get_var( $this->db->prepare( "SELECT COUNT(*) FROM {$this->db->term_taxonomy} WHERE taxonomy = %s $where", $taxonomy ) );
 	}
 
 	/**
@@ -850,9 +865,9 @@ class WP_Taxonomy {
 			$taxonomies = array($taxonomies);
 
 		foreach ( $taxonomies as $taxonomy ) {
-			$terms = $this->get_object_terms($object_id, $taxonomy, 'fields=tt_ids');
+			$terms = $this->get_object_terms($object_id, $taxonomy, array('fields' => 'tt_ids'));
 			$in_terms = "'" . implode("', '", $terms) . "'";
-			$this->db->query("DELETE FROM {$this->db->term_relationships} WHERE object_id = '$object_id' AND term_taxonomy_id IN ($in_terms)");
+			$this->db->query( $this->db->prepare( "DELETE FROM {$this->db->term_relationships} WHERE object_id = %d AND term_taxonomy_id IN ($in_terms)", $object_id ) );
 			$this->update_term_count($terms, $taxonomy);
 		}
 	}
@@ -912,7 +927,7 @@ class WP_Taxonomy {
 		$objects = $this->db->get_col( $this->db->prepare( "SELECT object_id FROM {$this->db->term_relationships} WHERE term_taxonomy_id = %d", $tt_id ) );
 
 		foreach ( (array) $objects as $object ) {
-			$terms = $this->get_object_terms($object, $taxonomy, 'fields=ids');
+			$terms = $this->get_object_terms($object, $taxonomy, array('fields' => 'ids'));
 			if ( 1 == count($terms) && isset($default) )
 				$terms = array($default);
 			else
@@ -979,21 +994,46 @@ class WP_Taxonomy {
 
 		$defaults = array('orderby' => 'name', 'order' => 'ASC', 'fields' => 'all');
 		$args = wp_parse_args( $args, $defaults );
+
+		$terms = array();
+		if ( count($taxonomies) > 1 ) {
+			foreach ( $taxonomies as $index => $taxonomy ) {
+				$t = $this->get_taxonomy($taxonomy);
+				if ( is_array($t->args) && $args != array_merge($args, $t->args) ) {
+					unset($taxonomies[$index]);
+					$terms = array_merge($terms, $this->get_object_terms($object_ids, $taxonomy, array_merge($args, $t->args)));
+				}
+			}
+		} else {
+			$t = $this->get_taxonomy($taxonomies[0]);
+			if ( is_array($t->args) )
+				$args = array_merge($args, $t->args);
+		}
+
 		extract($args, EXTR_SKIP);
 
 		if ( 'count' == $orderby )
 			$orderby = 'tt.count';
 		else if ( 'name' == $orderby )
 			$orderby = 't.name';
+		else if ( 'slug' == $orderby )
+			$orderby = 't.slug';
+		else if ( 'term_group' == $orderby )
+			$orderby = 't.term_group';
+		else if ( 'term_order' == $orderby )
+			$orderby = 'tr.term_order';
+		else
+			$orderby = 't.term_id';
 
 		$taxonomies = "'" . implode("', '", $taxonomies) . "'";
 		$object_ids = implode(', ', $object_ids);
 
+		$select_this = '';
 		if ( 'all' == $fields )
 			$select_this = 't.*, tt.*';
 		else if ( 'ids' == $fields )
 			$select_this = 't.term_id';
-		else if ( 'names' == $fields ) 
+		else if ( 'names' == $fields )
 			$select_this = 't.name';
 		else if ( 'all_with_object_id' == $fields )
 			$select_this = 't.*, tt.*, tr.object_id';
@@ -1001,10 +1041,10 @@ class WP_Taxonomy {
 		$query = "SELECT $select_this FROM {$this->db->terms} AS t INNER JOIN {$this->db->term_taxonomy} AS tt ON tt.term_id = t.term_id INNER JOIN {$this->db->term_relationships} AS tr ON tr.term_taxonomy_id = tt.term_taxonomy_id WHERE tt.taxonomy IN ($taxonomies) AND tr.object_id IN ($object_ids) ORDER BY $orderby $order";
 
 		if ( 'all' == $fields || 'all_with_object_id' == $fields ) {
-			$terms = $this->db->get_results($query);
+			$terms = array_merge($terms, $this->db->get_results($query));
 			$this->update_term_cache($terms);
 		} else if ( 'ids' == $fields || 'names' == $fields ) {
-			$terms = $this->db->get_col($query);
+			$terms = array_merge($terms, $this->db->get_col($query));
 		} else if ( 'tt_ids' == $fields ) {
 			$terms = $this->db->get_col("SELECT tr.term_taxonomy_id FROM {$this->db->term_relationships} AS tr INNER JOIN {$this->db->term_taxonomy} AS tt ON tr.term_taxonomy_id = tt.term_taxonomy_id WHERE tr.object_id IN ($object_ids) AND tt.taxonomy IN ($taxonomies) ORDER BY tr.term_taxonomy_id $order");
 		}
@@ -1168,7 +1208,7 @@ class WP_Taxonomy {
 		foreach ($terms as $term) {
 			if ( !strlen(trim($term)) )
 				continue;
-			
+
 			if ( !$id = $this->is_term($term, $taxonomy) )
 				$id = $this->insert_term($term, $taxonomy);
 			if ( is_wp_error($id) )
@@ -1369,14 +1409,14 @@ class WP_Taxonomy {
 	// if no value is supplied, the current value of the defer setting is returned
 	function defer_term_counting($defer=NULL) {
 		static $_defer = false;
-		
+
 		if ( is_bool($defer) ) {
 			$_defer = $defer;
 			// flush any deferred counts
 			if ( !$defer )
 				$this->update_term_count( NULL, NULL, true );
 		}
-		
+
 		return $_defer;
 	}
 
@@ -1419,7 +1459,7 @@ class WP_Taxonomy {
 			$_deferred[$taxonomy] = array_unique( array_merge($_deferred[$taxonomy], $terms) );
 			return true;
 		}
-		
+
 		return $this->update_term_count_now( $terms, $taxonomy );
 	}
 
