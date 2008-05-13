@@ -170,9 +170,4 @@ function _pad_term_counts(&$terms, $taxonomy) {
 	return $wp_taxonomy_object->_pad_term_counts(&$terms, $taxonomy);
 }
 
-function _update_post_term_count( $terms ) {
-	global $wp_taxonomy_object;
-	return $wp_taxonomy_object->_update_post_term_count( $terms );
-}
-
 ?>
