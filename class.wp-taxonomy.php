@@ -177,7 +177,7 @@ class WP_Taxonomy { // [WP7919]
 	 * @return WP_Error|array If the taxonomy does not exist, then WP_Error will be returned. On success
 	 *	the array can be empty meaning that there are no $object_ids found or it will return the $object_ids found.
 	 */
-	function get_objects_in_term( $terms, $taxonomies, $args = array() ) {
+	function get_objects_in_term( $terms, $taxonomies, $args = null ) {
 		if ( !is_array($terms) )
 			$terms = array($terms);
 
@@ -189,9 +189,14 @@ class WP_Taxonomy { // [WP7919]
 				return new WP_Error('invalid_taxonomy', __('Invalid Taxonomy'));
 		}
 
-		$defaults = array('order' => 'ASC');
+		$defaults = array('order' => 'ASC', 'field' => 'term_id');
 		$args = wp_parse_args( $args, $defaults );
 		extract($args, EXTR_SKIP);
+
+		if ( 'tt_id' == $field )
+			$field = 'tr.term_taxonomy_id';
+		else
+			$field = 'tr.term_id';
 
 		$order = ( 'desc' == strtolower($order) ) ? 'DESC' : 'ASC';
 
@@ -200,7 +205,7 @@ class WP_Taxonomy { // [WP7919]
 		$taxonomies = "'" . implode("', '", $taxonomies) . "'";
 		$terms = "'" . implode("', '", $terms) . "'";
 
-		$object_ids = $this->db->get_col("SELECT tr.object_id FROM {$this->db->term_relationships} AS tr INNER JOIN {$this->db->term_taxonomy} AS tt ON tr.term_taxonomy_id = tt.term_taxonomy_id WHERE tt.taxonomy IN ($taxonomies) AND tt.term_id IN ($terms) ORDER BY tr.object_id $order");
+		$object_ids = $this->db->get_col("SELECT tr.object_id FROM {$this->db->term_relationships} AS tr INNER JOIN {$this->db->term_taxonomy} AS tt ON tr.term_taxonomy_id = tt.term_taxonomy_id WHERE tt.taxonomy IN ($taxonomies) AND $field IN ($terms) ORDER BY tr.object_id $order");
 
 		if ( ! $object_ids )
 			return array();
@@ -296,7 +301,7 @@ class WP_Taxonomy { // [WP7919]
 	 * @uses sanitize_term() Cleanses the term based on $filter context before returning.
 	 * @see sanitize_term_field() The $context param lists the available values for get_term_by() $filter param.
 	 *
-	 * @param string $field Either 'slug', 'name', or 'id'
+	 * @param string $field Either 'slug', 'name', 'id', or 'tt_id'
 	 * @param string|int $value Search for this term value
 	 * @param string $taxonomy Taxonomy Name
 	 * @param string $output Constant OBJECT, ARRAY_A, or ARRAY_N
@@ -309,12 +314,15 @@ class WP_Taxonomy { // [WP7919]
 
 		if ( 'slug' == $field ) {
 			$field = 't.slug';
-			$value = $this->sanitize_term_slug($value);
+			$value = $this->sanitize_term_slug($value, $taxonomy);
 			if ( empty($value) )
 				return false;
 		} else if ( 'name' == $field ) {
 			// Assume already escaped
 			$field = 't.name';
+		} else if ( 'tt_id' == $field ) {
+			$field = 'tt.term_taxonomy_id';
+			$value = (int) $value;
 		} else {
 			$field = 't.term_id';
 			$value = (int) $value;
@@ -698,7 +706,7 @@ class WP_Taxonomy { // [WP7919]
 				return 0;
 			$where = $this->db->prepare( "t.term_id = %d", $term );
 		} else {
-			if ( '' === $term = $this->sanitize_term_slug($term) )
+			if ( '' === $term = $this->sanitize_term_slug($term, $taxonomy) )
 				return 0;
 			$where = $this->db->prepare( "t.slug = %s", $term );
 		}
@@ -709,8 +717,8 @@ class WP_Taxonomy { // [WP7919]
 		return $this->db->get_var("SELECT term_id FROM {$this->db->terms} as t WHERE $where");
 	}
 
-	function sanitize_term_slug( $title ) {
-		return sanitize_title( $title );
+	function sanitize_term_slug( $title, $taxonomy = '', $term_id = 0 ) {
+		return apply_filters( 'pre_term_slug', $title, $taxonomy, $term_id );
 	}
 
 	function format_to_edit( $text ) {
@@ -1120,7 +1128,7 @@ class WP_Taxonomy { // [WP7919]
 		$description = stripslashes($description);
 
 		if ( empty($slug) )
-			$slug = $this->sanitize_term_slug($name);
+			$slug = $this->sanitize_term_slug($name, $taxonomy);
 
 		$term_group = 0;
 		if ( $alias_of ) {
@@ -1149,7 +1157,7 @@ class WP_Taxonomy { // [WP7919]
 		}
 
 		if ( empty($slug) ) {
-			$slug = $this->sanitize_term_slug($slug, $term_id);
+			$slug = $this->sanitize_term_slug($slug, $taxonomy, $term_id);
 			$this->db->update( $this->db->terms, compact( 'slug' ), compact( 'term_id' ) );
 		}
 
@@ -1370,7 +1378,7 @@ class WP_Taxonomy { // [WP7919]
 		$empty_slug = false;
 		if ( empty($slug) ) {
 			$empty_slug = true;
-			$slug = $this->sanitize_term_slug($name);
+			$slug = $this->sanitize_term_slug($name, $taxonomy, $term_id);
 		}
 
 		if ( $alias_of ) {
@@ -1399,7 +1407,7 @@ class WP_Taxonomy { // [WP7919]
 		$this->db->update($this->db->terms, compact( 'name', 'slug', 'term_group' ), compact( 'term_id' ) );
 
 		if ( empty($slug) ) {
-			$slug = $this->sanitize_term_slug($name, $term_id);
+			$slug = $this->sanitize_term_slug($name, $taxonomy, $term_id);
 			$this->db->update( $this->db->terms, compact( 'slug' ), compact( 'term_id' ) );
 		}
 
