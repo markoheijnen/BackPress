@@ -186,3 +186,13 @@ function wp_parse_args( $args, $defaults = '' ) {
 		return $r;
 }
 
+function wp_parse_str( $string, &$array ) {
+	parse_str( $string, $array );
+	if ( get_magic_quotes_gpc() )
+		$array = stripslashes_deep( $array ); // parse_str() adds slashes if magicquotes is on.  See: http://php.net/parse_str
+	$array = apply_filters( 'wp_parse_str', $array );
+}
+
+function stripslashes_deep($value) { // [5261]
+	return is_array($value) ? array_map('stripslashes_deep', $value) : stripslashes($value);
+}
