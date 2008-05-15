@@ -153,3 +153,36 @@ function absint( $maybeint ) {
 function like_escape($text) {
 	return str_replace(array("%", "_"), array("\\%", "\\_"), $text);
 }
+
+function wp_specialchars( $text, $quotes = 0 ) { // [WP4451]
+	// Like htmlspecialchars except don't double-encode HTML entities
+	$text = str_replace('&&', '&#038;&', $text);
+	$text = str_replace('&&', '&#038;&', $text);
+	$text = preg_replace('/&(?:$|([^#])(?![a-z1-4]{1,8};))/', '&#038;$1', $text);
+	$text = str_replace('<', '&lt;', $text);
+	$text = str_replace('>', '&gt;', $text);
+	if ( 'double' === $quotes ) {
+		$text = str_replace('"', '&quot;', $text);
+	} elseif ( 'single' === $quotes ) {
+		$text = str_replace("'", '&#039;', $text);
+	} elseif ( $quotes ) {
+		$text = str_replace('"', '&quot;', $text);
+		$text = str_replace("'", '&#039;', $text);
+	}
+	return $text;
+}
+
+function wp_parse_args( $args, $defaults = '' ) {
+	if ( is_object($args) )
+		$r = get_object_vars($args);
+	else if ( is_array( $args ) )
+		$r =& $args;
+	else
+		wp_parse_str( $args, $r );
+
+	if ( is_array( $defaults ) )
+		return array_merge( $defaults, $r );
+	else
+		return $r;
+}
+
