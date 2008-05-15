@@ -26,7 +26,7 @@ class BP_Roles {
 		$this->role_objects = array();
 		$this->role_names =  array();
 		foreach ($this->roles as $role => $data) {
-			$this->role_objects[$role] = new BP_Role($role, $this->roles[$role]['capabilities'], &$this);
+			$this->role_objects[$role] = new BP_Role($role, $this->roles[$role]['capabilities'], $this);
 			$this->role_names[$role] = $this->roles[$role]['name'];
 		}
 	}
@@ -43,7 +43,7 @@ class BP_Roles {
 			'name' => $display_name,
 			'capabilities' => $capabilities);
 
-		$this->role_objects[$role] = new BP_Role($role, $capabilities, &$this);
+		$this->role_objects[$role] = new BP_Role($role, $capabilities, $this);
 		$this->role_names[$role] = $display_name;
 		return $this->role_objects[$role];
 	}
@@ -82,7 +82,7 @@ class BP_Roles {
 
 	function map_meta_cap( $cap, $user_id ) {
 		$args = array_slice(func_get_args(), 2);
-		return apply_filters( 'map_meta_cap', array(), $cap, $user_id, $args );
+		return apply_filters( 'map_meta_cap', array( $cap ), $cap, $user_id, $args );
 	}
 }
 
