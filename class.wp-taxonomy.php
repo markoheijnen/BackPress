@@ -1360,9 +1360,6 @@ class WP_Taxonomy { // [WP7919]
 		// First, get all of the original args
 		$term = $this->get_term($term_id, $taxonomy, ARRAY_A);
 
-		// Escape data pulled from DB.
-		$term = add_magic_quotes($term);
-
 		// Merge old and new args with new args overwriting old ones.
 		$args = array_merge($term, $args);
 
