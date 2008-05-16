@@ -541,9 +541,9 @@ class BPDB {
 	 * Checks wether of not the database version is high enough to support the features WordPress uses
 	 * @global $wp_version
 	 */
-	function check_database_version( ) {
+	function check_database_version( $dbh_or_table = false ) {
 		// Make sure the server has MySQL 4.0
-		$mysql_version = preg_replace( '|[^0-9\.]|', '', $this->db_version() );
+		$mysql_version = preg_replace( '|[^0-9\.]|', '', $this->db_version( $dbh_or_table ) );
 		if ( version_compare($mysql_version, '4.0.0', '<') )
 			return new WP_Error( 'database_version', BBDB__DB_VERSION_ERROR );
 	}
