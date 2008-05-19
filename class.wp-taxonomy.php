@@ -1008,14 +1008,14 @@ class WP_Taxonomy { // [WP7919]
 		if ( count($taxonomies) > 1 ) {
 			foreach ( $taxonomies as $index => $taxonomy ) {
 				$t = $this->get_taxonomy($taxonomy);
-				if ( is_array($t->args) && $args != array_merge($args, $t->args) ) {
+				if ( isset($t->args) && is_array($t->args) && $args != array_merge($args, $t->args) ) {
 					unset($taxonomies[$index]);
 					$terms = array_merge($terms, $this->get_object_terms($object_ids, $taxonomy, array_merge($args, $t->args)));
 				}
 			}
 		} else {
 			$t = $this->get_taxonomy($taxonomies[0]);
-			if ( is_array($t->args) )
+			if ( isset($t->args) && is_array($t->args) )
 				$args = array_merge($args, $t->args);
 		}
 
