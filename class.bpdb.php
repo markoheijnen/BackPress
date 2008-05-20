@@ -59,7 +59,7 @@ class BPDB {
 
 		$args = wp_parse_args( $args, $defaults );
 
-		switch ( $args['debug'] ) :
+		switch ( $args['errors'] ) :
 		case 'show' :
 			$this->show_errors( true );
 			break;
@@ -107,7 +107,7 @@ class BPDB {
 			}
 			
 			if ( !empty($collation_query) )
-				$this->query($collation_query);
+				$this->query($collation_query, true);
 			
 		}
 
@@ -149,7 +149,7 @@ class BPDB {
 	function select( $db, &$dbh ) {
 		if ( !@mysql_select_db($db, $dbh) ) {
 			$this->ready = false;
-			$this->bail( BBDB__SELECT_ERROR_MESSAGE );
+			$this->bail( BPDB__SELECT_ERROR_MESSAGE );
 			return false;
 		}
 		return true;
@@ -206,7 +206,7 @@ class BPDB {
 			return false;
 
 		$caller = $this->get_caller();
-		$error_str = sprintf( BBDB__ERROR_STRING, $str, $this->last_query, $caller );
+		$error_str = sprintf( BPDB__ERROR_STRING, $str, $this->last_query, $caller );
 
 		$log_error = function_exists('error_log');
 
@@ -227,7 +227,7 @@ class BPDB {
 		$query = htmlspecialchars($this->last_query, ENT_QUOTES);
 
 		// If there is an error then take note of it
-		printf( BBDB_ERROR_HTML, $str, $query, htmlspecialchars($caller) );
+		printf( BPDB__ERROR_HTML, $str, $query, htmlspecialchars($caller) );
 	}
 
 	// ==================================================================
@@ -265,7 +265,7 @@ class BPDB {
 	// ==================================================================
 	//	Basic Query	- see docs for more detail
 
-	function query($query) {
+	function query($query, $use_current = false) {
 		if ( ! $this->ready )
 			return false;
 
@@ -288,7 +288,10 @@ class BPDB {
 		if (SAVEQUERIES)
 			$this->timer_start();
 
-		$dbh = $this->db_connect( $query );
+		if ( $use_current )
+			$dbh =& $this->dbh;
+		else
+			$dbh = $this->db_connect( $query );
 
 		$this->result = @mysql_query($query, $dbh);
 		++$this->num_queries;
@@ -545,7 +548,7 @@ class BPDB {
 		// Make sure the server has MySQL 4.0
 		$mysql_version = preg_replace( '|[^0-9\.]|', '', $this->db_version( $dbh_or_table ) );
 		if ( version_compare($mysql_version, '4.0.0', '<') )
-			return new WP_Error( 'database_version', BBDB__DB_VERSION_ERROR );
+			return new WP_Error( 'database_version', BPDB__DB_VERSION_ERROR );
 	}
 
 	/**
