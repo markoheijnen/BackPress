@@ -23,7 +23,7 @@ function wp_print_scripts( $handles = false ) {
 			$wp_scripts = new WP_Scripts();
 	}
 
-	return $wp_scripts->print_scripts( $handles );
+	return $wp_scripts->do_items( $handles );
 }
 
 function wp_register_script( $handle, $src, $deps = array(), $ver = false ) {
@@ -75,5 +75,3 @@ function wp_enqueue_script( $handle, $src = false, $deps = array(), $ver = false
 	}
 	$wp_scripts->enqueue( $handle );
 }
-
-?>
