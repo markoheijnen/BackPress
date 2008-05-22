@@ -68,9 +68,9 @@ class BPDB_Multi extends BPDB {
 		}
 
 		foreach ( $this->tables as $index => $table ) {
-			if ( is_array($table) && isset($this->db_servers['dbh_' . $table['database']]) ) {
-				$this->add_db_table( $table['database'], $table['table'] );
-				$this->$index = $table['table'];
+			if ( is_array($table) && isset($this->db_servers['dbh_' . $table[0]]) ) {
+				$this->add_db_table( $table[0], $table[1] );
+				$this->$index = $table[1];
 			}
 		}
 
