@@ -129,15 +129,11 @@ class BPDB {
 			$this->prefix = $prefix;
 		}
 
-		foreach ( $_tables as $table )
-			$this->$table = $prefix . $table;
-
-		// TODO: is this needed?
-		if ( defined('CUSTOM_USER_TABLE') )
-			$this->users = CUSTOM_USER_TABLE;
-
-		if ( defined('CUSTOM_USER_META_TABLE') )
-			$this->usermeta = CUSTOM_USER_META_TABLE;
+		foreach ( $_tables as $index => $table )
+			if (!$table)
+				$this->$index = $prefix . $index;
+			elseif (is_string($table))
+				$this->$index = $table;
 
 		return $old_prefix;
 	}

@@ -38,7 +38,7 @@ class BPDB_Multi extends BPDB {
 			$dbhname = $this->_force_dbhname;
 		
 		if ( isset( $this->db_tables[$table] ) )
-			$dbhname = "dbh_{$this->db_tables[$table]}";
+			$dbhname = $this->db_tables[$table];
 		else
 			$dbhname = 'dbh_global';
 
@@ -59,6 +59,22 @@ class BPDB_Multi extends BPDB {
 		}
 
 		return $this->conn[$dbhname];
+	}
+
+	function set_prefix( $prefix, $tables = false ) {
+		$old_prefix = parent::set_prefix( $prefix, $tables );
+		if ( !$old_prefix || is_wp_error($old_prefix) ) {
+			return $old_prefix;
+		}
+
+		foreach ( $this->tables as $index => $table ) {
+			if ( is_array($table) && isset($this->db_servers['dbh_' . $table['database']]) ) {
+				$this->add_db_table( $table['database'], $table['table'] );
+				$this->$index = $table['table'];
+			}
+		}
+
+		return $old_prefix;
 	}
 
 	function get_table_from_query( $q ) {
@@ -115,12 +131,12 @@ class BPDB_Multi extends BPDB {
 		);
 
 		$args = wp_parse_args( $args, $defaults );
-		$args['ds'] = $ds;
+		$args['ds'] = 'dbh_' . $ds;
 
-		$this->db_servers[$ds] = $args;
+		$this->db_servers['dbh_' . $ds] = $args;
 	}
 
 	function add_db_table( $ds, $table ) {
-		$this->db_tables[$table] = $ds;
+		$this->db_tables[$table] = 'dbh_' . $ds;
 	}
 }
