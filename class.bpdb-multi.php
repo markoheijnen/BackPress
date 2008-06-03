@@ -34,13 +34,15 @@ class BPDB_Multi extends BPDB {
 		$this->last_table = $table = $this->get_table_from_query( $query );
 		
 		// We can attempt to force the connection identifier in use
-		if ( $this->_force_dbhname )
+		if ( $this->_force_dbhname && isset($this->db_servers[$this->_force_dbhname]) )
 			$dbhname = $this->_force_dbhname;
 		
-		if ( isset( $this->db_tables[$table] ) )
-			$dbhname = $this->db_tables[$table];
-		else
-			$dbhname = 'dbh_global';
+		if ( !isset($dbhname) ) {
+			if ( isset( $this->db_tables[$table] ) )
+				$dbhname = $this->db_tables[$table];
+			else
+				$dbhname = 'dbh_global';
+		}
 
 		if ( !isset($this->db_servers[$dbhname]) )
 			return $false;
@@ -67,7 +69,13 @@ class BPDB_Multi extends BPDB {
 			return $old_prefix;
 		}
 
-		foreach ( $this->tables as $index => $table ) {
+		if ( $tables && is_array($tables) ) {
+			$_tables = $tables;
+		} else {
+			$_tables = $this->tables;
+		}
+		
+		foreach ( $_tables as $index => $table ) {
 			if ( is_array($table) && isset($this->db_servers['dbh_' . $table[0]]) ) {
 				$this->add_db_table( $table[0], $table[1] );
 				$this->$index = $table[1];
