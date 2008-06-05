@@ -275,6 +275,7 @@ class WP_Users {
 				$trans[$object[$i]->$id_field] =& $object[$i];
 			$ids = join(',', array_keys($trans));
 			if ( $metas = $this->db->get_results("SELECT $meta_field, meta_key, meta_value FROM {$this->db->$meta_table} WHERE $meta_field IN ($ids) /* WP_Users::append_meta */") ) {
+				usort( $metas, array(&$this, '_append_meta_sort') );
 				foreach ( $metas as $meta ) {
 					$trans[$meta->$meta_field]->{$meta->meta_key} = maybe_unserialize( $meta->meta_value );
 					if ( strpos($meta->meta_key, $this->db->prefix) === 0 )
@@ -291,6 +292,7 @@ class WP_Users {
 			return $object;
 		} elseif ( $object ) {
 			if ( $metas = $this->db->get_results("SELECT meta_key, meta_value FROM {$this->db->$meta_table} WHERE $meta_field = '{$object->$id_field}' /* WP_Users::append_meta */") ) {
+				usort( $metas, array(&$this, '_append_meta_sort') );
 				foreach ( $metas as $meta ) {
 					$object->{$meta->meta_key} = maybe_unserialize( $meta->meta_value );
 					if ( strpos($meta->meta_key, $this->db->prefix) === 0 )
@@ -306,6 +308,15 @@ class WP_Users {
 		}
 	}
 	
+	/** 
+	 * _append_meta_sort() - sorts meta keys by length to ensure $appended_object->{$bbdb->prefix}key overwrites $appended_object->key as desired
+	 *
+	 * @internal
+	 */
+	function _append_meta_sort( $a, $b ) {
+		return strlen( $a->meta_key ) - strlen( $b->meta_key );
+	}
+
 	function update_meta( $args = null ) {
 		$defaults = array( 'id' => 0, 'meta_key' => null, 'meta_value' => null, 'meta_table' => 'usermeta', 'meta_field' => 'user_id', 'cache_group' => 'users' );
 		$args = wp_parse_args( $args, $defaults );
