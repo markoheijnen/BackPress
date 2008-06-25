@@ -297,8 +297,7 @@ class BPDB {
 
 		// If there is an error then take note of it..
 		if ( $this->last_error = mysql_error($dbh) ) {
-			$this->print_error();
-			return false;
+			return $this->print_error($this->last_error);
 		}
 
 		if ( preg_match("/^\\s*(insert|delete|update|replace) /i",$query) ) {
