@@ -1,23 +1,47 @@
 <?php
 
+/**
+ * Serialize data, if needed.
+ *
+ * @param mixed $data Data that might be serialized.
+ * @return mixed A scalar data
+ */
 function maybe_serialize( $data ) {
 	if ( is_array( $data ) || is_object( $data ) )
 		return serialize( $data );
+
 	if ( is_serialized( $data ) )
 		return serialize( $data );
+
 	return $data;
 }
 
+/**
+ * Unserialize value only if it was serialized.
+ *
+ * @since 2.0.0
+ *
+ * @param string $original Maybe unserialized original, if is needed.
+ * @return mixed Unserialized data can be any type.
+ */
 function maybe_unserialize( $original ) {
-	if ( is_serialized( $original ) ) { // don't attempt to unserialize data that wasn't serialized going in
-		if ( 'b:0;' === $data )
-			return false;
+	if ( is_serialized( $original ) ) // don't attempt to unserialize data that wasn't serialized going in
 		if ( false !== $gm = @unserialize( $original ) )
 			return $gm;
-	}
 	return $original;
 }
 
+/**
+ * Check value to find if it was serialized.
+ *
+ * If $data is not an string, then returned value will always be false.
+ * Serialized data is always a string.
+ *
+ * @since 2.0.5
+ *
+ * @param mixed $data Value to check to see if was serialized.
+ * @return bool False if not serialized and true if it was.
+ */
 function is_serialized( $data ) {
 	// if it isn't a string, it isn't serialized
 	if ( !is_string( $data ) )
@@ -44,6 +68,14 @@ function is_serialized( $data ) {
 	return false;
 }
 
+/**
+ * Check whether serialized data is of string type.
+ *
+ * @since 2.0.5
+ *
+ * @param mixed $data Serialized data
+ * @return bool False if not a serialized string, true if it is.
+ */
 function is_serialized_string( $data ) {
 	// if it isn't a string, it isn't a serialized string
 	if ( !is_string( $data ) )
@@ -170,18 +202,29 @@ function wp_specialchars( $text, $quotes = 0 ) { // [WP4451]
 	return $text;
 }
 
+/**
+ * Merge user defined arguments into defaults array.
+ *
+ * This function is used throughout WordPress to allow for both string or array
+ * to be merged into another array.
+ *
+ * @since 2.2.0
+ *
+ * @param string|array $args Value to merge with $defaults
+ * @param array $defaults Array that serves as the defaults.
+ * @return array Merged user defined values with defaults.
+ */
 function wp_parse_args( $args, $defaults = '' ) {
-	if ( is_object($args) )
-		$r = get_object_vars($args);
-	else if ( is_array( $args ) )
+	if ( is_object( $args ) )
+		$r = get_object_vars( $args );
+	elseif ( is_array( $args ) )
 		$r =& $args;
 	else
 		wp_parse_str( $args, $r );
 
 	if ( is_array( $defaults ) )
 		return array_merge( $defaults, $r );
-	else
-		return $r;
+	return $r;
 }
 
 function wp_parse_str( $string, &$array ) {
