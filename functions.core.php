@@ -1,9 +1,7 @@
 <?php
 
 function maybe_serialize( $data ) {
-	if ( is_string( $data ) )
-		$data = trim( $data );
-	elseif ( is_array( $data ) || is_object( $data ) )
+	if ( is_array( $data ) || is_object( $data ) )
 		return serialize( $data );
 	if ( is_serialized( $data ) )
 		return serialize( $data );
