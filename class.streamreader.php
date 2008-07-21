@@ -159,6 +159,7 @@ class CachedFileReader extends StringReader {
 	return false;
       }
       $this->_str = fread($fd, $length);
+      $this->_pos = 0;
       fclose($fd);
 
     } else {
