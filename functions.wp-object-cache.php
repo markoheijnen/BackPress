@@ -3,12 +3,14 @@
 /**
  * Object Cache API
  *
+ * @link http://codex.wordpress.org/Function_Reference/WP_Cache
+ *
  * @package WordPress
  * @subpackage Cache
  */
 
 /**
- * wp_cache_add() - Adds data to the cache, if the cache key doesn't aleady exist
+ * Adds data to the cache, if the cache key doesn't aleady exist.
  *
  * @since 2.0
  * @uses $wp_object_cache Object Cache Class
@@ -27,11 +29,12 @@ function wp_cache_add($key, $data, $flag = '', $expire = 0) {
 }
 
 /**
- * wp_cache_close() - Closes the cache
+ * Closes the cache.
  *
- * This function has ceased to do anything since WordPress 2.5.
- * The functionality was removed along with the rest of the
- * persistant cache.
+ * This function has ceased to do anything since WordPress 2.5. The
+ * functionality was removed along with the rest of the persistant cache. This
+ * does not mean that plugins can't implement this function when they need to
+ * make sure that the cache is cleaned up after WordPress no longer needs it.
  *
  * @since 2.0
  *
@@ -42,7 +45,7 @@ function wp_cache_close() {
 }
 
 /**
- * wp_cache_delete() - Removes the cache contents matching ID and flag
+ * Removes the cache contents matching ID and flag.
  *
  * @since 2.0
  * @uses $wp_object_cache Object Cache Class
@@ -59,7 +62,7 @@ function wp_cache_delete($id, $flag = '') {
 }
 
 /**
- * wp_cache_flush() - Removes all cache items
+ * Removes all cache items.
  *
  * @since 2.0
  * @uses $wp_object_cache Object Cache Class
@@ -74,7 +77,7 @@ function wp_cache_flush( $group = null ) {
 }
 
 /**
- * wp_cache_get() - Retrieves the cache contents from the cache by ID and flag
+ * Retrieves the cache contents from the cache by ID and flag.
  *
  * @since 2.0
  * @uses $wp_object_cache Object Cache Class
@@ -82,7 +85,8 @@ function wp_cache_flush( $group = null ) {
  *
  * @param int|string $id What the contents in the cache are called
  * @param string $flag Where the cache contents are grouped
- * @return bool|mixed False on failure to retrieve contents or the cache contents on success
+ * @return bool|mixed False on failure to retrieve contents or the cache
+ *		contents on success
  */
 function wp_cache_get($id, $flag = '') {
 	global $wp_object_cache;
@@ -91,7 +95,7 @@ function wp_cache_get($id, $flag = '') {
 }
 
 /**
- * wp_cache_init() - Sets up Object Cache Global and assigns it
+ * Sets up Object Cache Global and assigns it.
  *
  * @since 2.0
  * @global WP_Object_Cache $wp_object_cache WordPress Object Cache
@@ -101,7 +105,7 @@ function wp_cache_init() {
 }
 
 /**
- * wp_cache_replace() - Replaces the contents of the cache with new data
+ * Replaces the contents of the cache with new data.
  *
  * @since 2.0
  * @uses $wp_object_cache Object Cache Class
@@ -120,7 +124,7 @@ function wp_cache_replace($key, $data, $flag = '', $expire = 0) {
 }
 
 /**
- * wp_cache_set() - Saves the data to the cache
+ * Saves the data to the cache.
  *
  * @since 2.0
  * @uses $wp_object_cache Object Cache Class
@@ -136,6 +140,30 @@ function wp_cache_set($key, $data, $flag = '', $expire = 0) {
 	global $wp_object_cache;
 
 	return $wp_object_cache->set($key, $data, $flag, $expire);
+}
+
+/**
+ * Adds a group or set of groups to the list of global groups.
+ *
+ * @since 2.6
+ *
+ * @param string|array $groups A group or an array of groups to add
+ */
+function wp_cache_add_global_groups( $groups ) {
+	// Default cache doesn't persist so nothing to do here.
+	return;
+}
+
+/**
+ * Adds a group or set of groups to the list of non-persistent groups.
+ *
+ * @since 2.6
+ *
+ * @param string|array $groups A group or an array of groups to add
+ */
+function wp_cache_add_non_persistent_groups( $groups ) {
+	// Default cache doesn't persist so nothing to do here.
+	return;
 }
 
 ?>
