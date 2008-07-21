@@ -2,7 +2,7 @@
 
 class WP_Pass {
 	/**
-	 * hash_password() - Create a hash (encrypt) of a plain text password
+	 * Create a hash (encrypt) of a plain text password
 	 *
 	 * For integration with other applications, this function can be
 	 * overwritten to instead use the other package password checking
@@ -23,12 +23,12 @@ class WP_Pass {
 			// By default, use the portable hash from phpass
 			$wp_hasher = new PasswordHash(8, TRUE);
 		}
-	
-		return $wp_hasher->HashPassword($password); 
+
+		return $wp_hasher->HashPassword($password);
 	}
 
 	/**
-	 * check_password() - Checks the plaintext password against the encrypted Password
+	 * Checks the plaintext password against the encrypted Password
 	 *
 	 * Maintains compatibility between old version and the new cookie
 	 * authentication protocol using PHPass library. The $hash parameter
@@ -51,16 +51,16 @@ class WP_Pass {
 	 */
 	function check_password($password, $hash, $user_id = '') {
 		global $wp_hasher, $wp_users_object;
-		// If the hash is still md5... 
-		if ( strlen($hash) <= 32 ) { 
-			$check = ( $hash == md5($password) ); 
-			if ( $check && $user_id ) { 
-				// Rehash using new hash. 
-				$wp_users_object->set_password($password, $user_id); 
-				$hash = WP_Pass::hash_password($password); 
-			} 
-			
-			return apply_filters('check_password', $check, $password, $hash, $user_id); 
+		// If the hash is still md5...
+		if ( strlen($hash) <= 32 ) {
+			$check = ( $hash == md5($password) );
+			if ( $check && $user_id ) {
+				// Rehash using new hash.
+				$wp_users_object->set_password($password, $user_id);
+				$hash = WP_Pass::hash_password($password);
+			}
+
+			return apply_filters('check_password', $check, $password, $hash, $user_id);
 		}
 
 		// If the stored hash is longer than an MD5, presume the
@@ -76,7 +76,7 @@ class WP_Pass {
 	}
 
 	/**
-	 * generate_password() - Generates a random password drawn from the defined set of characters
+	 * Generates a random password drawn from the defined set of characters
 	 *
 	 * @since WP 2.5
 	 *
