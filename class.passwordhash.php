@@ -2,24 +2,16 @@
 /**
  * Portable PHP password hashing framework.
  * @package phpass
- * @since 2.4
+ * @since 2.5
  * @version 0.1
  * @link http://www.openwall.com/phpass/
  */
 
 #
-# Portable PHP password hashing framework.
-#
-# Version 0.1 / genuine.
-#
 # Written by Solar Designer <solar at openwall.com> in 2004-2006 and placed in
 # the public domain.
 #
 # There's absolutely no warranty.
-#
-# The homepage URL for this framework is:
-#
-#	http://www.openwall.com/phpass/
 #
 # Please be sure to update the Version line if you edit this file in any way.
 # It is suggested that you leave the main version number intact, but indicate
@@ -32,6 +24,15 @@
 # Obviously, since this code is in the public domain, the above are not
 # requirements (there can be none), but merely suggestions.
 #
+
+/**
+ * Portable PHP password hashing framework.
+ *
+ * @package phpass
+ * @version 0.1 / genuine
+ * @link http://www.openwall.com/phpass/
+ * @since 2.5
+ */
 class PasswordHash {
 	var $itoa64;
 	var $iteration_count_log2;
@@ -48,7 +49,7 @@ class PasswordHash {
 
 		$this->portable_hashes = $portable_hashes;
 
-		$this->random_state = microtime() . getmypid();
+		$this->random_state = microtime() . (function_exists('getmypid') ? getmypid() : '') . uniqid(rand(), TRUE);
 	}
 
 	function get_random_bytes($count)
