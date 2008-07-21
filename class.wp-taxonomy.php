@@ -1,6 +1,6 @@
 <?php
 
-class WP_Taxonomy { // [WP7919]
+class WP_Taxonomy { // [WP8377]
 	var $db;
 	var $taxonomioes = array();
 
@@ -562,7 +562,8 @@ class WP_Taxonomy { // [WP7919]
 		}
 
 		// $args can be whatever, only use the args defined in defaults to compute the key
-		$key = md5( serialize( compact(array_keys($defaults)) ) . serialize( $taxonomies ) );
+		$filter_key = ( has_filter('list_terms_exclusions') ) ? serialize($GLOBALS['wp_filter']['list_terms_exclusions']) : '';
+		$key = md5( serialize( compact(array_keys($defaults)) ) . serialize( $taxonomies ) . $filter_key );
 
 		if ( $cache = wp_cache_get( 'get_terms', 'terms' ) ) {
 			if ( isset( $cache[ $key ] ) )
@@ -720,17 +721,17 @@ class WP_Taxonomy { // [WP7919]
 		if ( is_int($term) ) {
 			if ( 0 == $term )
 				return 0;
-			$where = $this->db->prepare( "t.term_id = %d", $term );
+			$where = 't.term_id = %d';
 		} else {
 			if ( '' === $term = $this->sanitize_term_slug($term, $taxonomy) )
 				return 0;
-			$where = $this->db->prepare( "t.slug = %s", $term );
+			$where = 't.slug = %s';
 		}
 
 		if ( !empty($taxonomy) )
-			return $this->db->get_row("SELECT tt.term_id, tt.term_taxonomy_id FROM {$this->db->terms} AS t INNER JOIN {$this->db->term_taxonomy} as tt ON tt.term_id = t.term_id WHERE $where AND tt.taxonomy = '$taxonomy'", ARRAY_A);
+			return $wpdb->get_row( $wpdb->prepare("SELECT tt.term_id, tt.term_taxonomy_id FROM $wpdb->terms AS t INNER JOIN $wpdb->term_taxonomy as tt ON tt.term_id = t.term_id WHERE $where AND tt.taxonomy = %s", $term, $taxonomy), ARRAY_A);
 
-		return $this->db->get_var("SELECT term_id FROM {$this->db->terms} as t WHERE $where");
+		return $wpdb->get_var( $wpdb->prepare("SELECT term_id FROM $wpdb->terms as t WHERE $where", $term) );
 	}
 
 	function sanitize_term_slug( $title, $taxonomy = '', $term_id = 0 ) {
