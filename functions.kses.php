@@ -133,6 +133,10 @@ function wp_kses_split2($string, $allowed_html, $allowed_protocols) {
 			$string = $newstring;
 		if ( $string == '' )
 			return '';
+		// prevent multiple dashes in comments
+		$string = preg_replace('/--+/', '-', $string);
+		// prevent three dashes closing a comment
+		$string = preg_replace('/-$/', '', $string);
 		return "<!--{$string}-->";
 	}
 	# Allow HTML comments
@@ -235,7 +239,8 @@ function wp_kses_attr($element, $attr, $allowed_html, $allowed_protocols) {
  * input. It will add quotes around attribute values that don't have any quotes
  * or apostrophes around them, to make it easier to produce HTML code that will
  * conform to W3C's HTML specification. It will also remove bad URL protocols
- * from attribute values.
+ * from attribute values.  It also reduces duplicate attributes by using the
+ * attribute defined first (foo='bar' foo='baz' will result in foo='bar').
  *
  * @since 1.0.0
  *
@@ -278,7 +283,9 @@ function wp_kses_hair($attr, $allowed_protocols) {
 					{
 					$working = 1;
 					$mode = 0;
-					$attrarr[] = array ('name' => $attrname, 'value' => '', 'whole' => $attrname, 'vless' => 'y');
+					if(FALSE === array_key_exists($attrname, $attrarr)) {
+						$attrarr[$attrname] = array ('name' => $attrname, 'value' => '', 'whole' => $attrname, 'vless' => 'y');
+					}
 					$attr = preg_replace('/^\s+/', '', $attr);
 				}
 
@@ -291,7 +298,9 @@ function wp_kses_hair($attr, $allowed_protocols) {
 					{
 					$thisval = wp_kses_bad_protocol($match[1], $allowed_protocols);
 
-					$attrarr[] = array ('name' => $attrname, 'value' => $thisval, 'whole' => "$attrname=\"$thisval\"", 'vless' => 'n');
+					if(FALSE === array_key_exists($attrname, $attrarr)) {
+						$attrarr[$attrname] = array ('name' => $attrname, 'value' => $thisval, 'whole' => "$attrname=\"$thisval\"", 'vless' => 'n');
+					}
 					$working = 1;
 					$mode = 0;
 					$attr = preg_replace('/^"[^"]*"(\s+|$)/', '', $attr);
@@ -303,7 +312,9 @@ function wp_kses_hair($attr, $allowed_protocols) {
 					{
 					$thisval = wp_kses_bad_protocol($match[1], $allowed_protocols);
 
-					$attrarr[] = array ('name' => $attrname, 'value' => $thisval, 'whole' => "$attrname='$thisval'", 'vless' => 'n');
+					if(FALSE === array_key_exists($attrname, $attrarr)) {
+						$attrarr[$attrname] = array ('name' => $attrname, 'value' => $thisval, 'whole' => "$attrname='$thisval'", 'vless' => 'n');
+					}
 					$working = 1;
 					$mode = 0;
 					$attr = preg_replace("/^'[^']*'(\s+|$)/", '', $attr);
@@ -316,6 +327,9 @@ function wp_kses_hair($attr, $allowed_protocols) {
 					$thisval = wp_kses_bad_protocol($match[1], $allowed_protocols);
 
 					$attrarr[] = array ('name' => $attrname, 'value' => $thisval, 'whole' => "$attrname=\"$thisval\"", 'vless' => 'n');
+					if(FALSE === array_key_exists($attrname, $attrarr)) {
+						$attrarr[$attrname] = array ('name' => $attrname, 'value' => $thisval, 'whole' => "$attrname=\"$thisval\"", 'vless' => 'n');
+					}
 					# We add quotes to conform to W3C's HTML spec.
 					$working = 1;
 					$mode = 0;
@@ -332,10 +346,10 @@ function wp_kses_hair($attr, $allowed_protocols) {
 		}
 	} # while
 
-	if ($mode == 1)
+	if ($mode == 1 && FALSE === array_key_exists($attrname, $attrarr))
 		# special case, for when the attribute list ends with a valueless
 		# attribute like "selected"
-		$attrarr[] = array ('name' => $attrname, 'value' => '', 'whole' => $attrname, 'vless' => 'y');
+		$attrarr[$attrname] = array ('name' => $attrname, 'value' => '', 'whole' => $attrname, 'vless' => 'y');
 
 	return $attrarr;
 }
@@ -539,9 +553,9 @@ function wp_kses_bad_protocol_once($string, $allowed_protocols) {
 
 	$string2 = preg_split('/:|&#58;|&#x3a;/i', $string, 2);
 	if ( isset($string2[1]) && !preg_match('%/\?%', $string2[0]) )
-		$string = wp_kses_bad_protocol_once2($string2[0], $allowed_protocols) . trim($string2[1]);
+		$string = wp_kses_bad_protocol_once2($string2[0]) . trim($string2[1]);
 	else
-		$string = preg_replace_callback('/^((&[^;]*;|[\sA-Za-z0-9])*)'.'(:|&#58;|&#[Xx]3[Aa];)\s*/', create_function('$matches', 'global $_kses_allowed_protocols; return wp_kses_bad_protocol_once2($matches[1], $_kses_allowed_protocols);'), $string);
+		$string = preg_replace_callback('/^((&[^;]*;|[\sA-Za-z0-9])*)'.'(:|&#58;|&#[Xx]3[Aa];)\s*/', 'wp_kses_bad_protocol_once2', $string);
 
 	return $string;
 }
@@ -554,11 +568,21 @@ function wp_kses_bad_protocol_once($string, $allowed_protocols) {
  *
  * @since 1.0.0
  *
- * @param string $string Content to check for bad protocols
- * @param array $allowed_protocols Allowed protocols
+ * @param mixed $matches string or preg_replace_callback() matches array to check for bad protocols
  * @return string Sanitized content
  */
-function wp_kses_bad_protocol_once2($string, $allowed_protocols) {
+function wp_kses_bad_protocol_once2($matches) {
+	global $_kses_allowed_protocols;
+
+	if ( is_array($matches) ) {
+		if ( ! isset($matches[1]) || empty($matches[1]) )
+			return '';
+
+		$string = $matches[1];
+	} else {
+		$string = $matches;
+	}
+	
 	$string2 = wp_kses_decode_entities($string);
 	$string2 = preg_replace('/\s/', '', $string2);
 	$string2 = wp_kses_no_null($string2);
@@ -567,7 +591,7 @@ function wp_kses_bad_protocol_once2($string, $allowed_protocols) {
 	$string2 = strtolower($string2);
 
 	$allowed = false;
-	foreach ($allowed_protocols as $one_protocol)
+	foreach ( (array) $_kses_allowed_protocols as $one_protocol)
 		if (strtolower($one_protocol) == $string2) {
 			$allowed = true;
 			break;
@@ -599,8 +623,8 @@ function wp_kses_normalize_entities($string) {
 	# Change back the allowed entities in our entity whitelist
 
 	$string = preg_replace('/&amp;([A-Za-z][A-Za-z0-9]{0,19});/', '&\\1;', $string);
-	$string = preg_replace_callback('/&amp;#0*([0-9]{1,5});/', create_function('$matches', 'return wp_kses_normalize_entities2($matches[1]);'), $string);
-	$string = preg_replace('/&amp;#([Xx])0*(([0-9A-Fa-f]{2}){1,2});/', '&#\\1\\2;', $string);
+	$string = preg_replace_callback('/&amp;#0*([0-9]{1,5});/', 'wp_kses_normalize_entities2', $string);
+	$string = preg_replace_callback('/&amp;#([Xx])0*(([0-9A-Fa-f]{2}){1,2});/', 'wp_kses_normalize_entities3', $string);
 
 	return $string;
 }
@@ -613,11 +637,46 @@ function wp_kses_normalize_entities($string) {
  *
  * @since 1.0.0
  *
- * @param int $i Number encoded entity
+ * @param array $matches preg_replace_callback() matches array
  * @return string Correctly encoded entity
  */
-function wp_kses_normalize_entities2($i) {
+function wp_kses_normalize_entities2($matches) {
+	if ( ! isset($matches[1]) || empty($matches[1]) )
+		return '';
+
+	$i = $matches[1];
 	return (($i > 65535) ? "&amp;#$i;" : "&#$i;");
+}
+
+/**
+ * wp_kses_normalize_entities3() - Callback for wp_kses_normalize_entities() for regular expression
+ *
+ * This function helps wp_kses_normalize_entities() to only accept valid Unicode numeric entities
+ * in hex form.
+ *
+ * @param string $h Hex string of encoded entity
+ * @param array $matches preg_replace_callback() matches array
+ * @return string Correctly encoded entity
+ */
+function wp_kses_normalize_entities3($matches) {
+	if ( ! isset($matches[2]) || empty($matches[2]) )
+		return '';
+
+	$hexchars = $matches[2];
+	return ( ( ! valid_unicode(hexdec($hexchars)) ) ? "&amp;#x$hexchars;" : "&#x$hexchars;" );
+}
+
+/**
+ * valid_unicode() - Helper function to determine if a Unicode value is valid.
+ *
+ * @param int $i Unicode value
+ * @return bool true if the value was a valid Unicode number
+ */
+function valid_unicode($i) {
+	return ( $i == 0x9 || $i == 0xa || $i == 0xd ||
+			($i >= 0x20 && $i <= 0xd7ff) ||
+			($i >= 0xe000 && $i <= 0xfffd) ||
+			($i >= 0x10000 && $i <= 0x10ffff) );
 }
 
 /**
