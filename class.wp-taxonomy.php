@@ -228,7 +228,7 @@ class WP_Taxonomy { // [WP8377]
 	 * filters.
 	 *
 	 * $term ID must be part of $taxonomy, to get from the database. Failure, might
-	 * be able to be captured by the hooks. Failure would be the same value as $wpdb
+	 * be able to be captured by the hooks. Failure would be the same value as $this->db
 	 * returns for the get_row method.
 	 *
 	 * There are two hooks, one is specifically for each term, named 'get_term', and
@@ -729,9 +729,9 @@ class WP_Taxonomy { // [WP8377]
 		}
 
 		if ( !empty($taxonomy) )
-			return $wpdb->get_row( $wpdb->prepare("SELECT tt.term_id, tt.term_taxonomy_id FROM $wpdb->terms AS t INNER JOIN $wpdb->term_taxonomy as tt ON tt.term_id = t.term_id WHERE $where AND tt.taxonomy = %s", $term, $taxonomy), ARRAY_A);
+			return $this->db->get_row( $this->db->prepare("SELECT tt.term_id, tt.term_taxonomy_id FROM {$this->db->terms} AS t INNER JOIN {$this->db->term_taxonomy} as tt ON tt.term_id = t.term_id WHERE $where AND tt.taxonomy = %s", $term, $taxonomy), ARRAY_A);
 
-		return $wpdb->get_var( $wpdb->prepare("SELECT term_id FROM $wpdb->terms as t WHERE $where", $term) );
+		return $this->db->get_var( $this->db->prepare("SELECT term_id FROM {$this->db->terms} as t WHERE $where", $term) );
 	}
 
 	function sanitize_term_slug( $title, $taxonomy = '', $term_id = 0 ) {
