@@ -718,20 +718,36 @@ class WP_Taxonomy { // [WP8377]
 	 * @return mixed Get the term id or Term Object, if exists.
 	 */
 	function is_term($term, $taxonomy = '') {
+		$select = "SELECT term_id FROM {$this->db->terms} as t WHERE ";
+		$tax_select = "SELECT tt.term_id, tt.term_taxonomy_id FROM {$this->db->terms} AS t INNER JOIN {$this->db->term_taxonomy} as tt ON tt.term_id = t.term_id WHERE ";
+		
 		if ( is_int($term) ) {
 			if ( 0 == $term )
 				return 0;
 			$where = 't.term_id = %d';
-		} else {
-			if ( '' === $term = $this->sanitize_term_slug($term, $taxonomy) )
-				return 0;
-			$where = 't.slug = %s';
-		}
+			if ( !empty($taxonomy) ) 
+				return $wpdb->get_row( $this->db->prepare( $tax_select . $where . " AND tt.taxonomy = %s", $term, $taxonomy ), ARRAY_A ); 
+			else 
+				return $wpdb->get_var( $this->db->prepare( $select . $where, $term ) ); 
+		} 
 
-		if ( !empty($taxonomy) )
-			return $this->db->get_row( $this->db->prepare("SELECT tt.term_id, tt.term_taxonomy_id FROM {$this->db->terms} AS t INNER JOIN {$this->db->term_taxonomy} as tt ON tt.term_id = t.term_id WHERE $where AND tt.taxonomy = %s", $term, $taxonomy), ARRAY_A);
+		if ( '' === $slug = sanitize_title($term) ) 
+			return 0; 
 
-		return $this->db->get_var( $this->db->prepare("SELECT term_id FROM {$this->db->terms} as t WHERE $where", $term) );
+		$where = 't.slug = %s'; 
+		$else_where = 't.name = %s'; 
+
+		if ( !empty($taxonomy) ) { 
+			if ( $result = $this->db->get_row( $this->db->prepare("SELECT tt.term_id, tt.term_taxonomy_id FROM {$this->db->terms} AS t INNER JOIN {$this->db->term_taxonomy} as tt ON tt.term_id = t.term_id WHERE $where AND tt.taxonomy = %s", $slug, $taxonomy), ARRAY_A) ) 
+				return $result; 
+
+			return $this->db->get_row( $this->db->prepare("SELECT tt.term_id, tt.term_taxonomy_id FROM {$this->db->terms} AS t INNER JOIN {$this->db->term_taxonomy} as tt ON tt.term_id = t.term_id WHERE $else_where AND tt.taxonomy = %s", $term, $taxonomy), ARRAY_A); 
+		} 
+
+		if ( $result = $this->db->get_var( $this->db->prepare("SELECT term_id FROM {$this->db->terms} as t WHERE $where", $slug) ) ) 
+			return $result; 
+
+		return $this->db->get_var( $this->db->prepare("SELECT term_id FROM {$this->db->terms} as t WHERE $else_where", $term) );
 	}
 
 	function sanitize_term_slug( $title, $taxonomy = '', $term_id = 0 ) {
