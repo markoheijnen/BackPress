@@ -25,7 +25,8 @@ class WP_Users {
 			'user_pass' => false,
 			'user_registered' => time(),
 			'display_name' => '',
-			'user_status' => 0
+			'user_status' => 0,
+			'strict_user_login' => false
 		);
 
 		$args = wp_parse_args( $args, $defaults );
@@ -34,7 +35,10 @@ class WP_Users {
 
 		$ID = (int) $ID;
 
-		$user_login = $this->sanitize_user( $user_login );
+		$user_login = $this->sanitize_user( $user_login, $strict_user_login );
+		unset($args['strict_user_login']);
+		unset($defaults['strict_user_login']);
+
 		if ( !$user_login )
 			return new WP_Error( 'user_login', __('Invalid login name') );
 		if ( !$ID && $this->get_user( $user_login ) )
@@ -75,7 +79,7 @@ class WP_Users {
 			unset($args['user_registered']);
 			$db_return = $this->db->update( $this->db->users, compact( array_keys($defaults) ), compact('ID') );
 		}
-		if ( $db_return === null ) { 
+		if ( $db_return === null ) {
 			$db_return = $this->db->insert( $this->db->users, compact( array_keys($defaults) ) );
 		}
 
