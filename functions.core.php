@@ -1,5 +1,6 @@
 <?php
 
+if ( !function_exists('maybe_serialize') ) :
 /**
  * Serialize data, if needed.
  *
@@ -15,7 +16,9 @@ function maybe_serialize( $data ) {
 
 	return $data;
 }
+endif;
 
+if ( !function_exists('maybe_unserialize') ) :
 /**
  * Unserialize value only if it was serialized.
  *
@@ -30,7 +33,9 @@ function maybe_unserialize( $original ) {
 			return $gm;
 	return $original;
 }
+endif;
 
+if ( !function_exists('is_serialized') ) :
 /**
  * Check value to find if it was serialized.
  *
@@ -67,7 +72,9 @@ function is_serialized( $data ) {
 	}
 	return false;
 }
+endif;
 
+if ( !function_exists('is_serialized_string') ) :
 /**
  * Check whether serialized data is of string type.
  *
@@ -85,7 +92,9 @@ function is_serialized_string( $data ) {
 		return true;
 	return false;
 }
+endif;
 
+if ( !function_exists('is_email') ) :
 function is_email($user_email) {
 	$chars = "/^([a-z0-9+_]|\\-|\\.)+@(([a-z0-9_]|\\-)+\\.)+[a-z]{2,6}\$/i";
 	if (strpos($user_email, '@') !== false && strpos($user_email, '.') !== false) {
@@ -98,7 +107,9 @@ function is_email($user_email) {
 		return false;
 	}
 }
+endif;
 
+if ( !function_exists('sanitize_title') ) :
 function sanitize_title($title, $fallback_title = '') {
 	$title = strip_tags($title);
 	$title = apply_filters('sanitize_title', $title);
@@ -108,7 +119,9 @@ function sanitize_title($title, $fallback_title = '') {
 
 	return $title;
 }
+endif;
 
+if ( !function_exists('sanitize_title_with_dashes') ) :
 function sanitize_title_with_dashes($title) {
 	$title = strip_tags($title);
 	// Preserve escaped octets.
@@ -135,7 +148,9 @@ function sanitize_title_with_dashes($title) {
 
 	return $title;
 }
+endif;
 
+if ( !function_exists('sanitize_user') ) :
 function sanitize_user( $username, $strict = false ) {
 	$raw_username = $username;
 	$username = strip_tags($username);
@@ -149,7 +164,9 @@ function sanitize_user( $username, $strict = false ) {
 
 	return apply_filters('sanitize_user', $username, $raw_username, $strict);
 }
+endif;
 
+if ( !function_exists('backpress_gmt_strtotime') ) :
 function backpress_gmt_strtotime( $string ) {
 	if ( is_numeric($string) )
 		return $string;
@@ -164,7 +181,9 @@ function backpress_gmt_strtotime( $string ) {
 
 	return $time;
 }
+endif;
 
+if ( !function_exists('absint') ) :
 /**
  * Converts input to an absolute integer
  * @param mixed $maybeint data you wish to have convered to an absolute integer
@@ -173,7 +192,9 @@ function backpress_gmt_strtotime( $string ) {
 function absint( $maybeint ) {  
 	return abs( intval( $maybeint ) );
 }
+endif;
 
+if ( !function_exists('like_escape') ) :
 /**
  * Escapes text for SQL LIKE special characters % and _
  *
@@ -183,7 +204,9 @@ function absint( $maybeint ) {
 function like_escape($text) {
 	return str_replace(array("%", "_"), array("\\%", "\\_"), $text);
 }
+endif;
 
+if ( !function_exists('wp_specialchars') ) :
 function wp_specialchars( $text, $quotes = 0 ) { // [WP4451]
 	// Like htmlspecialchars except don't double-encode HTML entities
 	$text = str_replace('&&', '&#038;&', $text);
@@ -201,7 +224,9 @@ function wp_specialchars( $text, $quotes = 0 ) { // [WP4451]
 	}
 	return $text;
 }
+endif;
 
+if ( !function_exists('wp_parse_args') ) :
 /**
  * Merge user defined arguments into defaults array.
  *
@@ -226,18 +251,24 @@ function wp_parse_args( $args, $defaults = '' ) {
 		return array_merge( $defaults, $r );
 	return $r;
 }
+endif;
 
+if ( !function_exists('wp_parse_str') ) :
 function wp_parse_str( $string, &$array ) {
 	parse_str( $string, $array );
 	if ( get_magic_quotes_gpc() )
 		$array = stripslashes_deep( $array ); // parse_str() adds slashes if magicquotes is on.  See: http://php.net/parse_str
 	$array = apply_filters( 'wp_parse_str', $array );
 }
+endif;
 
+if ( !function_exists('stripslashes_deep') ) :
 function stripslashes_deep($value) { // [5261]
 	return is_array($value) ? array_map('stripslashes_deep', $value) : stripslashes($value);
 }
+endif;
 
+if ( !function_exists('seems_utf8') ) :
 function seems_utf8($Str) { # by bmorel at ssi dot fr
 	$length = strlen($Str);
 	for ($i=0; $i < $length; $i++) {
@@ -255,7 +286,9 @@ function seems_utf8($Str) { # by bmorel at ssi dot fr
 	}
 	return true;
 }
+endif;
 
+if ( !function_exists('remove_accents') ) :
 function remove_accents($string) {
 	if ( !preg_match('/[\x80-\xff]/', $string) )
 		return $string;
@@ -385,7 +418,9 @@ function remove_accents($string) {
 
 	return $string;
 }
+endif;
 
+if ( !function_exists('utf8_uri_encode') ) :
 function utf8_uri_encode( $utf8_string, $length = 0 ) {
 	$unicode = '';
 	$values = array();
@@ -426,7 +461,9 @@ function utf8_uri_encode( $utf8_string, $length = 0 ) {
 
 	return $unicode;
 }
+endif;
 
+if ( !function_exists('clean_url') ) :
 function clean_url( $url, $protocols = null, $context = 'display' ) {
 	$original_url = $url;
 
@@ -454,3 +491,4 @@ function clean_url( $url, $protocols = null, $context = 'display' ) {
 
 	return apply_filters('clean_url', $url, $original_url, $context);
 }
+endif;

@@ -8,12 +8,13 @@
 
 // Added in PHP 5.0
 
-if (!function_exists('http_build_query')) {
-	function http_build_query($data, $prefix=null, $sep=null) {
-		return _http_build_query($data, $prefix, $sep);
-	}
+if ( !function_exists('http_build_query') ) :
+function http_build_query($data, $prefix=null, $sep=null) {
+	return _http_build_query($data, $prefix, $sep);
 }
+endif;
 
+if ( !function_exists('_http_build_query') ) :
 // from php.net (modified by Mark Jaquith to behave like the native PHP5 function)
 function _http_build_query($data, $prefix=null, $sep=null, $key='', $urlencode=true) {
 	$ret = array();
@@ -43,20 +44,21 @@ function _http_build_query($data, $prefix=null, $sep=null, $key='', $urlencode=t
 
 	return implode($sep, $ret);
 }
+endif;
 
-if ( !function_exists('_') ) {
-	function _($string) {
-		return $string;
-	}
+if ( !function_exists('_') ) :
+function _($string) {
+	return $string;
 }
+endif;
 
-if (!function_exists('stripos')) {
-	function stripos($haystack, $needle, $offset = 0) {
-		return strpos(strtolower($haystack), strtolower($needle), $offset);
-	}
+if ( !function_exists('stripos') ) :
+function stripos($haystack, $needle, $offset = 0) {
+	return strpos(strtolower($haystack), strtolower($needle), $offset);
 }
+endif;
 
-if ( ! function_exists('hash_hmac') ):
+if ( !function_exists('hash_hmac') ):
 function hash_hmac($algo, $data, $key, $raw_output = false) {
 	$packs = array('md5' => 'H32', 'sha1' => 'H40');
 
@@ -78,11 +80,12 @@ function hash_hmac($algo, $data, $key, $raw_output = false) {
 endif;
 
 if ( ! function_exists('mb_strcut') ):
-	function mb_strcut( $str, $start, $length=null, $encoding=null ) {
-		return _mb_strcut($str, $start, $length, $encoding);
-	}
+function mb_strcut( $str, $start, $length=null, $encoding=null ) {
+	return _mb_strcut($str, $start, $length, $encoding);
+}
 endif;
 
+if ( ! function_exists('_mb_strcut') ):
 function _mb_strcut( $str, $start, $length=null, $encoding=null ) {
 	// the solution below, works only for utf-8, so in case of a different
 	// charset, just use built-in substr
@@ -95,5 +98,6 @@ function _mb_strcut( $str, $start, $length=null, $encoding=null ) {
 	$chars = is_null( $length )? array_slice( $match[0], $start ) : array_slice( $match[0], $start, $length );
 	return implode( '', $chars );
 }
+endif;
 
 ?>
