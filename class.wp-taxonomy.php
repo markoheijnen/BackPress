@@ -726,9 +726,9 @@ class WP_Taxonomy { // [WP8377]
 				return 0;
 			$where = 't.term_id = %d';
 			if ( !empty($taxonomy) ) 
-				return $wpdb->get_row( $this->db->prepare( $tax_select . $where . " AND tt.taxonomy = %s", $term, $taxonomy ), ARRAY_A ); 
+				return $this->db->get_row( $this->db->prepare( $tax_select . $where . " AND tt.taxonomy = %s", $term, $taxonomy ), ARRAY_A ); 
 			else 
-				return $wpdb->get_var( $this->db->prepare( $select . $where, $term ) ); 
+				return $this->db->get_var( $this->db->prepare( $select . $where, $term ) ); 
 		} 
 
 		if ( '' === $slug = sanitize_title($term) ) 
