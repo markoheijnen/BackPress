@@ -163,7 +163,8 @@ class WP_Users {
 	// TODO: array of ids
 	function get_user( $user_id = 0, $args = null ) {
 		$defaults = array( 'output' => OBJECT, 'by' => false );
-		extract( wp_parse_args( $args, $defaults ), EXTR_SKIP );
+		$args = wp_parse_args( $args, $defaults );
+		extract( $args, EXTR_SKIP );
 
 		if ( is_array( $user_id ) ) {
 			$users = array();
@@ -186,7 +187,7 @@ class WP_Users {
 					}
 					return $user;
 				}
-				$sql = "SELECT * FROM {$this->db->users} WHERE ID = %d";
+				$sql_field = 'ID';
 			} elseif ( 'email' == $by ) {
 				if ( !$this->is_email( $user_id ) )
 					return false;
@@ -196,23 +197,32 @@ class WP_Users {
 					$args['by'] = false;
 					return $this->get_user( $ID, $args );
 				}
-				$sql = "SELECT * FROM {$this->db->users} WHERE user_email = %s";
+				$sql_field = 'user_email';
 			} elseif ( 'nicename' == $by ) { // No cache?
 				$user_id = $this->sanitize_nicename( $user_id );
-				$sql = "SELECT * FROM {$this->db->users} WHERE user_nicename = %s";
+				$sql_field = 'user_nicename';
 			} else {
 				$user_id = $this->sanitize_user( $user_id );
 				if ( 0 === $ID = wp_cache_get( $user_id, 'userlogins' ) )
 					return false;
 				elseif ( $ID )
 					return $this->get_user( $ID, $args );
-				$sql = "SELECT * FROM {$this->db->users} WHERE user_login = %s";
+				$sql_field = 'user_login';
 			}
 
 			if ( !$user_id )
 				return false;
 
+			$sql = "SELECT * FROM {$this->db->users} WHERE $sql_field = %s"; // ID is already (int)ed
 			$user = $this->db->get_row( $this->db->prepare( $sql, $user_id ) );
+
+			if ( 1 < $this->db->num_rows ) {
+				if ( 'user_email' == $sql_field )
+					$err = __( 'Multiple email matches.  Log in with your username.' );
+				else
+					$err = sprintf( __( 'Multiple %s matches' ), $sql_field );
+				return new WP_Error( $sql_field, $err, $args + array( 'user_id' => $user_id, 'unique' => false ) );
+			}
 
 			if ( $user ) {
 				if ( is_numeric( $user_id ) ); // [sic]
