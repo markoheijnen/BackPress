@@ -669,7 +669,7 @@ class BPDB {
 		$intermediates = array( 'call_user_func_array', 'call_user_func', 'apply_filters', 'do_action', 'do_action_ref_array' );
 
 		foreach ( $bt as $trace ) {
-			if ( isset($trace['class']) && $trace['class'] == __CLASS__ )
+			if ( isset($trace['class']) && is_a( $this, $trace['class'] ) )
 				continue;
 			elseif ( !isset($trace['function']) )
 				continue;
