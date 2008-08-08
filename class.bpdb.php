@@ -676,7 +676,10 @@ class BPDB {
 			elseif ( in_array( strtolower(@$trace['function']), $intermediates ) )
 				continue;
 
-			$caller = $trace['function'];
+			if ( isset($trace['class']) )
+				$caller = $trace['class'] . '::' . $trace['function'];
+			else
+				$caller = $trace['function'];
 			break;
 		}
 		return $caller;
