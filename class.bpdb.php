@@ -23,6 +23,12 @@ class BPDB {
 	var $col_info;
 	var $queries;
 
+	/**                     
+	 * Whether to use the query log
+	 * @var bool
+	 */
+	var $save_queries = false;
+
 	var $prefix = '';
 	var $ready = false;
 
@@ -66,9 +72,6 @@ class BPDB {
 		case 'suppress' :
 			$this->suppress_errors( true );
 			break;
-		case 'return' :
-			$this->return_errors( true );
-			break;
 		endswitch;
 
 		return $args;
@@ -78,6 +81,11 @@ class BPDB {
 		return true;
 	}
 
+	/**
+	 * Figure out which database server should handle the query, and connect to it.
+	 * @param string query
+	 * @return resource mysql database connection
+	 */
 	function &db_connect( $query = '' ) {
 		$false = false;
 		if ( empty( $query ) )
@@ -85,6 +93,17 @@ class BPDB {
 		return $this->dbh;
 	}
 
+	/**
+	 * Connect to and selects a specific database server 
+	 * @param array args
+	 *	name => string DB name (required)
+	 *	user => string DB user (optional: false)
+	 *	password => string DB user password (optional: false)
+	 *	host => string DB hostname (optional: 'localhost')
+	 *	charset => string DB default charset.  Used in a SET NAMES query. (optional)
+	 *	collate => string DB default collation.  If charset supplied, optionally added to the SET NAMES query (optional)
+	 * @return void|bool void if cannot connect, false if cannot select, true if success
+	 */
 	function db_connect_host( $args ) {
 		extract( $args, EXTR_SKIP );
 
@@ -108,12 +127,21 @@ class BPDB {
 			
 			if ( !empty($collation_query) )
 				$this->query($collation_query, true);
-			
 		}
 
 		return $this->select($name, $this->dbh);
 	}
 
+	/**
+	 * Sets the prefix of the database tables
+	 * @param string prefix
+	 * @param false|array tables (optional: false)
+	 *	table identifiers are array keys
+	 *	array values
+	 *		empty: set prefix
+	 *		string: set to that array value
+	 * @return string the previous prefix (mostly only meaningful if all $table parameter was false)
+	 */
 	function set_prefix( $prefix, $tables = false ) {
 		if ( !$prefix )
 			return false;
@@ -141,6 +169,7 @@ class BPDB {
 	/**
 	 * Selects a database using the current class's $this->dbh
 	 * @param string $db name
+	 * @param resource $dbh mysql database resource
 	 */
 	function select( $db, &$dbh ) {
 		if ( !@mysql_select_db($db, $dbh) ) {
@@ -169,6 +198,10 @@ class BPDB {
 		$s = $this->escape($s);
 	}
 
+	/**
+	 * Escapes array recursively for insertion into the database, for security
+	 * @param array $array
+	 */
 	function escape_deep( $array ) {
 		return is_array($array) ? array_map(array(&$this, 'escape_deep'), $array) : $this->escape( $array );
 	}
@@ -188,79 +221,107 @@ class BPDB {
 		return @vsprintf($query, $args);
 	}
 
-	// ==================================================================
-	//	Print SQL/DB error.
+	/**
+	 * Get SQL/DB error
+	 * @param string $str Error string
+	 */
+	function get_error( $str = '' ) {
+		if ( empty($str) ) {
+			if ( $this->last_error )
+				$str = $this->last_error;
+			else
+				return false;
+		}
 
+		$error_str = sprintf( BPDB__ERROR_STRING, $str, $this->last_query, $caller );
+
+		if ( $caller = $this->get_caller() )
+			$error_str .= " made by $caller";
+
+		if ( class_exists( 'WP_Error' ) )
+			return new WP_Error( 'db_query', $error_str, array( 'query' => $this->last_query, 'error' => $str, 'caller' => $caller ) );
+		else
+			return array( 'query' => $this->last_query, 'error' => $str, 'caller' => $caller, 'error_str' => $error_str );
+	}
+
+	/**
+	 * Print SQL/DB error
+	 * @param string $str Error string
+	 */
 	function print_error($str = '') {
-		global $EZSQL_ERROR;
-
-		if (!$str) $str = mysql_error($this->dbh);
-		$EZSQL_ERROR[] =
-		array ('query' => $this->last_query, 'error_str' => $str);
-
 		if ( $this->suppress_errors )
 			return false;
 
-		$caller = $this->get_caller();
-		$error_str = sprintf( BPDB__ERROR_STRING, $str, $this->last_query, $caller );
+		$error = $this->get_error( $str );
+		if ( is_object( $error ) && is_a( $error, 'WP_Error' ) ) {
+			$err = $error->get_error_data();
+			$err['error_str'] = $error->get_error_messag();
+		} else {
+			$err =& $error;
+		}
 
-		$log_error = function_exists('error_log');
+		$log_file = ini_get('error_log');
+		if ( !empty($log_file) && ('syslog' != $log_file) && !is_writable($log_file) && function_exists( 'error_log' ) )
+			error_log($err['error_str'], 0);
 
-		$log_file = @ini_get('error_log');
-		if ( !empty($log_file) && ('syslog' != $log_file) && !is_writable($log_file) )
-			$log_error = false;
-
-		if ( $log_error )
-			@error_log($error_str, 0);
-
-		// Is error output turned on or not..
+		// Is error output turned on or not
 		if ( !$this->show_errors )
 			return false;
-		elseif ( 2 === $this->show_errors )
-			return new WP_Error( 'db_query', $error_str, array( 'query' => $this->last_query, 'error' => $str, 'caller' => $caller ) );
 
-		$str = htmlspecialchars($str, ENT_QUOTES);
-		$query = htmlspecialchars($this->last_query, ENT_QUOTES);
+		$str = htmlspecialchars($err['str'], ENT_QUOTES);
+		$query = htmlspecialchars($err['query'], ENT_QUOTES);
+		$caller = htmlspecialchars($err['caller'], ENT_QUOTES);
 
 		// If there is an error then take note of it
-		printf( BPDB__ERROR_HTML, $str, $query, htmlspecialchars($caller) );
+		printf( BPDB__ERROR_HTML, $str, $query, $caller );
 	}
 
-	// ==================================================================
-	//	Turn error handling on or off..
-
+	/**
+	 * Turn error output on or off
+	 * @param bool $show
+	 * @return bool previous setting
+	 */
 	function show_errors( $show = true ) {
 		$errors = $this->show_errors;
 		$this->show_errors = $show;
 		return $errors;
 	}
 
+	/**
+	 * Turn error output off
+	 * @return bool previous setting of show_errors
+	 */
 	function hide_errors() {
 		return $this->show_errors( false );
 	}
 
-	function return_errors() {
-		return $this->show_errors( 2 );
-	}
-
+	/**
+	 * Turn error logging on or off
+	 * @param bool $suppress
+	 * @return bool previous setting
+	 */
 	function suppress_errors( $suppress = true ) {
 		$errors = $this->suppress_errors;
 		$this->suppress_errors = $suppress;
 		return $errors;
 	}
 
-	// ==================================================================
-	//	Kill cached query results
-
+	/**
+	 * Kill cached query results
+	 */
 	function flush() {
 		$this->last_result = array();
 		$this->col_info = null;
 		$this->last_query = null;
+		$this->last_error = '';
+		$this->num_rows = 0;
 	}
 
-	// ==================================================================
-	//	Basic Query	- see docs for more detail
-
+	/**
+	 * Basic query. See docs for more details.
+	 * @param string $query
+	 * @return int number of rows
+	 */
 	function query($query, $use_current = false) {
 		if ( ! $this->ready )
 			return false;
@@ -449,14 +510,15 @@ class BPDB {
 		if ( $output == OBJECT ) {
 			// Return an integer-keyed array of row objects
 			return $this->last_result;
-		} elseif ( $output == OBJECT_K ) {
+		} elseif ( $output == OBJECT_K || $output == ARRAY_K ) {
 			// Return an array of row objects with keys from column 1
 			// (Duplicates are discarded)
-			foreach ( $this->last_result as $row ) {
-				$key = array_shift( get_object_vars( $row ) );
-				if ( !isset( $new_array[ $key ] ) )
-					$new_array[ $key ] = $row;
-			}
+			$key = $this->col_info[0]->name;
+			foreach ( $this->last_result as $row )
+				if ( !isset( $new_array[ $row->$key ] ) )
+					$new_array[ $row->$key ] = $row;
+			if ( $output == ARRAY_K )
+				return array_map('get_object_vars', $new_array);
 			return $new_array;
 		} elseif ( $output == ARRAY_A || $output == ARRAY_N ) {
 			// Return an integer-keyed array of...
@@ -549,11 +611,18 @@ class BPDB {
 	/**
 	 * This function is called when WordPress is generating the table schema to determine wether or not the current database
 	 * supports or needs the collation statements.
+	 * @return bool
 	 */
 	function supports_collation() {
 		return $this->has_cap( 'collation' );
 	}
 
+	/**
+	 * Generic function to determine if a database supports a particular feature
+	 * @param string $db_cap the feature
+	 * @param false|string|resource $dbh_or_table the databaese (the current database, the database housing the specified table, or the database of the mysql resource)
+	 * @return bool
+	 */
 	function has_cap( $db_cap, $dbh_or_table = false ) {
 		$version = $this->db_version( $dbh_or_table );
 
@@ -567,7 +636,11 @@ class BPDB {
 		return false;
 	}
 
-	// table name or mysql resource 
+	/**
+	 * The database version number
+	 * @param false|string|resource $dbh_or_table the databaese (the current database, the database housing the specified table, or the database of the mysql resource)
+	 * @return false|string false on failure, version number on success
+	 */
 	function db_version( $dbh_or_table = false ) {
 		if ( !$dbh_or_table )
 			$dbh =& $this->dbh;
@@ -593,10 +666,12 @@ class BPDB {
 
 		$bt = debug_backtrace();
 
-		$intermediates = array( 'call_user_func_array', 'call_user_func', 'apply_filters', 'do_action' );
+		$intermediates = array( 'call_user_func_array', 'call_user_func', 'apply_filters', 'do_action', 'do_action_ref_array' );
 
 		foreach ( $bt as $trace ) {
-			if ( @$trace['class'] == __CLASS__ )
+			if ( isset($trace['class']) && $trace['class'] == __CLASS__ )
+				continue;
+			elseif ( !isset($trace['function']) )
 				continue;
 			elseif ( in_array( strtolower(@$trace['function']), $intermediates ) )
 				continue;

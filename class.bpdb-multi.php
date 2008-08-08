@@ -8,7 +8,12 @@
 require( BACKPRESS_PATH . 'class.bpdb.php' );
 
 class BPDB_Multi extends BPDB {
-	var $conn = array();
+	/**
+	 * Associative array (dbhname => dbh) for established mysql connections
+	 * @var array
+	 */
+        var $dbhs = array();
+
 	var $_force_dbhname = false;
 	var $last_table = '';
 	var $db_tables = array();
@@ -26,6 +31,11 @@ class BPDB_Multi extends BPDB {
 		}
 	}
 
+	/**
+	 * Figure out which database server should handle the query, and connect to it.
+	 * @param string query
+	 * @return resource mysql database connection
+	 */
 	function &db_connect( $query = '' ) {
 		$false = false;
 		if ( empty( $query ) )
@@ -47,22 +57,33 @@ class BPDB_Multi extends BPDB {
 		if ( !isset($this->db_servers[$dbhname]) )
 			return $false;
 
-		if ( isset($this->conn[$dbhname]) && is_resource($this->conn[$dbhname]) ) // We're already connected!
-			return $this->conn[$dbhname];
+		if ( isset($this->dbhs[$dbhname]) && is_resource($this->dbhs[$dbhname]) ) // We're already connected!
+			return $this->dbhs[$dbhname];
 		
 		$success = $this->db_connect_host( $this->db_servers[$dbhname] );
 
 		if ( $success && is_resource($this->dbh) ) {
-			$this->conn[$dbhname] =& $this->dbh;
+			$this->dbhs[$dbhname] =& $this->dbh;
 		} else {
-			unset($this->conn[$dbhname]);
+			unset($this->dbhs[$dbhname]);
 			unset($this->dbh);
 			return $false;
 		}
 
-		return $this->conn[$dbhname];
+		return $this->dbhs[$dbhname];
 	}
 
+	/**
+	 * Sets the prefix of the database tables
+	 * @param string prefix
+	 * @param false|array tables (optional: false)
+	 *	table identifiers are array keys
+	 *	array values
+	 *		empty: set prefix
+	 *		string: set to that array value
+	 *		array: array[0] is DB identifier, array[1] is table name
+	 * @return string the previous prefix (mostly only meaningful if all $table parameter was false)
+	 */
 	function set_prefix( $prefix, $tables = false ) {
 		$old_prefix = parent::set_prefix( $prefix, $tables );
 		if ( !$old_prefix || is_wp_error($old_prefix) ) {
@@ -85,49 +106,66 @@ class BPDB_Multi extends BPDB {
 		return $old_prefix;
 	}
 
-	function get_table_from_query( $q ) {
-		if ( substr( $q, -1 ) == ';' )
-			$q = substr( $q, 0, -1 );
-		if ( preg_match('/^\s*SELECT.*?\s+FROM\s+`?(\w+)`?\s*/is', $q, $maybe) )
+	/**
+	 * Find the first table name referenced in a query
+	 * @param string query
+	 * @return string table
+	 */
+	function get_table_from_query ( $q ) {
+		// Remove characters that can legally trail the table name
+		rtrim($q, ';/-#');
+
+		// Quickly match most common queries
+		if ( preg_match('/^\s*(?:'
+				. 'SELECT.*?\s+FROM'
+				. '|INSERT(?:\s+IGNORE)?(?:\s+INTO)?'
+				. '|REPLACE(?:\s+INTO)?'
+				. '|UPDATE(?:\s+IGNORE)?'
+				. '|DELETE(?:\s+IGNORE)?(?:\s+FROM)?'
+				. ')\s+`?(\w+)`?/is', $q, $maybe) )
 			return $maybe[1];
-		if ( preg_match('/^\s*UPDATE IGNORE\s+`?(\w+)`?\s*/is', $q, $maybe) )
-			return $maybe[1];
-		if ( preg_match('/^\s*UPDATE\s+`?(\w+)`?\s*/is', $q, $maybe) )
-			return $maybe[1];
-		if ( preg_match('/^\s*INSERT INTO\s+`?(\w+)`?\s*/is', $q, $maybe) )
-			return $maybe[1];
-		if ( preg_match('/^\s*REPLACE INTO\s+`?(\w+)`?\s*/is', $q, $maybe) )
-			return $maybe[1];
-		if ( preg_match('/^\s*INSERT IGNORE INTO\s+`?(\w+)`?\s*/is', $q, $maybe) )
-			return $maybe[1];
-		if ( preg_match('/^\s*DELETE\s+FROM\s+`?(\w+)`?\s*/is', $q, $maybe) )
-			return $maybe[1];
-		if ( preg_match('/^\s*(?:TRUNCATE|RENAME|OPTIMIZE|LOCK|UNLOCK)\s+TABLE\s+`?(\w+)`?\s*/is', $q, $maybe) )
-			return $maybe[1];
-		if ( preg_match('/^SHOW TABLE STATUS (LIKE|FROM) \'?`?(\w+)\'?`?\s*/is', $q, $maybe) )
-			return $maybe[1];
-		if ( preg_match('/^SHOW INDEX FROM `?(\w+)`?\s*/is', $q, $maybe) )
-			return $maybe[1];
-		if ( preg_match('/^\s*CREATE\s+TABLE\s+IF\s+NOT\s+EXISTS\s+`?(\w+)`?\s*/is', $q, $maybe) )
-			return $maybe[1];
-		if ( preg_match('/^\s*SHOW CREATE TABLE `?(\w+?)`?\s*/is', $q, $maybe) )
-			return $maybe[1];
-		if ( preg_match('/^\s*CREATE\s+TABLE\s+`?(\w+)`?\s*/is', $q, $maybe) )
-			return $maybe[1];
-		if ( preg_match('/^\s*DROP\s+TABLE\s+IF\s+EXISTS\s+`?(\w+)`?\s*/is', $q, $maybe) )
-			return $maybe[1];
-		if ( preg_match('/^\s*DROP\s+TABLE\s+`?(\w+)`?\s*/is', $q, $maybe) )
-			return $maybe[1];
-		if ( preg_match('/^\s*DESCRIBE\s+`?(\w+)`?\s*/is', $q, $maybe) )
-			return $maybe[1];
-		if ( preg_match('/^\s*ALTER\s+TABLE\s+`?(\w+)`?\s*/is', $q, $maybe) )
-			return $maybe[1];
+
+		// Refer to the previous query
 		if ( preg_match('/^\s*SELECT.*?\s+FOUND_ROWS\(\)/is', $q) )
 			return $this->last_table;
 
+		// Big pattern for the rest of the table-related queries in MySQL 5.0
+		if ( preg_match('/^\s*(?:'
+				. '(?:EXPLAIN\s+(?:EXTENDED\s+)?)?SELECT.*?\s+FROM'
+				. '|INSERT(?:\s+LOW_PRIORITY|\s+DELAYED|\s+HIGH_PRIORITY)?(?:\s+IGNORE)?(?:\s+INTO)?'
+				. '|REPLACE(?:\s+LOW_PRIORITY|\s+DELAYED)?(?:\s+INTO)?'
+				. '|UPDATE(?:\s+LOW_PRIORITY)?(?:\s+IGNORE)?'
+				. '|DELETE(?:\s+LOW_PRIORITY|\s+QUICK|\s+IGNORE)*(?:\s+FROM)?'
+				. '|DESCRIBE|DESC|EXPLAIN|HANDLER'
+				. '|(?:LOCK|UNLOCK)\s+TABLE(?:S)?'
+				. '|(?:RENAME|OPTIMIZE|BACKUP|RESTORE|CHECK|CHECKSUM|ANALYZE|OPTIMIZE|REPAIR).*\s+TABLE'
+				. '|TRUNCATE(?:\s+TABLE)?'
+				. '|CREATE(?:\s+TEMPORARY)?\s+TABLE(?:\s+IF\s+NOT\s+EXISTS)?'
+				. '|ALTER(?:\s+IGNORE)?'
+				. '|DROP\s+TABLE(?:\s+IF\s+EXISTS)?'
+				. '|CREATE(?:\s+\w+)?\s+INDEX.*\s+ON'
+				. '|DROP\s+INDEX.*\s+ON'
+				. '|LOAD\s+DATA.*INFILE.*INTO\s+TABLE'
+				. '|(?:GRANT|REVOKE).*ON\s+TABLE'
+				. '|SHOW\s+(?:.*FROM|.*TABLE)'
+				. ')\s+`?(\w+)`?/is', $q, $maybe) )
+			return $maybe[1];
+
+		// All unmatched queries automatically fall to the global master
 		return '';
 	}
 
+	/**
+	 * Add a database server's information.  Does not automatically connect.
+	 * @param string $ds Dataset: the name of the dataset.
+	 * @param array $args
+	 *	name => string DB name (required)
+	 *	user => string DB user (optional: false)
+	 *	password => string DB user password (optional: false)
+	 *	host => string DB hostname (optional: 'localhost')
+	 *	charset => string DB default charset.  Used in a SET NAMES query. (optional)
+	 *	collate => string DB default collation.  If charset supplied, optionally added to the SET NAMES query (optional)
+	 */
 	function add_db_server( $ds, $args = null ) {
 		$defaults = array(
 			'user' => false,
@@ -144,6 +182,11 @@ class BPDB_Multi extends BPDB {
 		$this->db_servers['dbh_' . $ds] = $args;
 	}
 
+	/**
+	 * Maps a table to a dataset.
+	 * @param string $ds Dataset: the name of the dataset.
+	 * @param string $table
+	 */
 	function add_db_table( $ds, $table ) {
 		$this->db_tables[$table] = 'dbh_' . $ds;
 	}
