@@ -51,10 +51,13 @@ class WP_Pass {
 	 */
 	function check_password($password, $hash, $user_id = '') {
 		global $wp_hasher, $wp_users_object;
+
+		list($hash, $broken) = explode( '---', $hash );
+
 		// If the hash is still md5...
 		if ( strlen($hash) <= 32 ) {
 			$check = ( $hash == md5($password) );
-			if ( $check && $user_id ) {
+			if ( $check && $user_id && !$broken ) {
 				// Rehash using new hash.
 				$wp_users_object->set_password($password, $user_id);
 				$hash = WP_Pass::hash_password($password);
