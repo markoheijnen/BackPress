@@ -282,15 +282,9 @@ class WP_Taxonomy { // [WP8377]
 		$_term = apply_filters("get_$taxonomy", $_term, $taxonomy);
 		$_term = $this->sanitize_term($_term, $taxonomy, $filter);
 
-		if ( $output == OBJECT ) {
-			return $_term;
-		} elseif ( $output == ARRAY_A ) {
-			return get_object_vars($_term);
-		} elseif ( $output == ARRAY_N ) {
-			return array_values(get_object_vars($_term));
-		} else {
-			return $_term;
-		}
+		backpress_convert_object( $_term );
+
+		return $_term;
 	}
 
 	/**
@@ -347,15 +341,9 @@ class WP_Taxonomy { // [WP8377]
 
 		$term = $this->sanitize_term($term, $taxonomy, $filter);
 
-		if ( $output == OBJECT ) {
-			return $term;
-		} elseif ( $output == ARRAY_A ) {
-			return get_object_vars($term);
-		} elseif ( $output == ARRAY_N ) {
-			return array_values(get_object_vars($term));
-		} else {
-			return $term;
-		}
+		backpress_convert_object( $term );
+
+		return $term;
 	}
 
 	/**

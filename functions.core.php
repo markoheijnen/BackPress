@@ -492,3 +492,16 @@ function clean_url( $url, $protocols = null, $context = 'display' ) {
 	return apply_filters('clean_url', $url, $original_url, $context);
 }
 endif;
+
+function backpress_convert_object( &$object, $output ) {
+	if ( is_array( $object ) ) {
+		foreach ( array_keys( $object ) as $key )
+			backpress_convert_object( &$object[$key], $output );
+	} else {
+		switch ( $output ) {
+			case OBJECT  : break;
+			case ARRAY_A : $object = get_object_vars($object); break;
+			case ARRAY_N : $object = array_values(get_object_vars($object)); break;
+		}
+	}
+}

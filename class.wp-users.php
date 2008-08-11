@@ -29,69 +29,92 @@ class WP_Users {
 			'strict_user_login' => false
 		);
 
+		$fields = array_keys( wp_parse_args( $args ) );
 		$args = wp_parse_args( $args, $defaults );
+		unset($defaults['strict_user_login']);
+
+		if ( isset($args['ID']) && $args['ID'] ) {
+			unset($defaults['ID']);
+			$fields = array_intersect( $fields, array_keys( $defaults ) );
+		} else {
+			$fields = array_keys( $defaults );
+		}
 
 		extract( $args, EXTR_SKIP );
 
 		$ID = (int) $ID;
 
-		$user_login = $this->sanitize_user( $user_login, $strict_user_login );
-		unset($args['strict_user_login']);
-		unset($defaults['strict_user_login']);
+		if ( !$ID || in_array( 'user_login', $fields ) ) {
+			$user_login = $this->sanitize_user( $user_login, $strict_user_login );
 
-		if ( !$user_login )
-			return new WP_Error( 'user_login', __('Invalid login name') );
-		if ( !$ID && $this->get_user( $user_login ) )
-			return new WP_Error( 'user_login', __('Name already exists') );
+			if ( !$user_login )
+				return new WP_Error( 'user_login', __('Invalid login name') );
+			if ( !$ID && $this->get_user( $user_login ) )
+				return new WP_Error( 'user_login', __('Name already exists') );
+		}
 
-		if ( !$user_nicename = $this->sanitize_nicename( $user_nicename ? $user_nicename : $user_login ) )
-			return new WP_Error( 'user_nicename', __('Invalid nicename') );
-		if ( !$ID && $this->get_user( $user_nicename, array( 'by' => 'nicename' ) ) )
-			return new WP_Error( 'user_nicename', __('Nicename already exists') );
+		if ( !$ID || in_array( 'user_nicename', $fields ) ) {
+			if ( !$user_nicename = $this->sanitize_nicename( $user_nicename ? $user_nicename : $user_login ) )
+				return new WP_Error( 'user_nicename', __('Invalid nicename') );
+			if ( !$ID && $this->get_user( $user_nicename, array( 'by' => 'nicename' ) ) )
+				return new WP_Error( 'user_nicename', __('Nicename already exists') );
+		}
 
-		if ( !$this->is_email( $user_email ) )
-			return new WP_Error( 'user_email', __('Invalid email address') );
-		if ( !$ID && $this->get_user( $user_email, array( 'by' => 'email' ) ) )
-			return new WP_Error( 'user_email', __('Email already exists') );
+		if ( !$ID || in_array( 'user_email', $fields ) ) {
+			if ( !$this->is_email( $user_email ) )
+				return new WP_Error( 'user_email', __('Invalid email address') );
 
-		$user_url = clean_url( $user_url );
+			if ( $already_email = $this->get_user( $user_email, array( 'by' => 'email' ) ) ) {
+				// if new user, or if multiple users with that email, or if only one user with that email, but it's not the user being updated
+				if ( !$ID || is_wp_error( $already_email ) || $already_email->ID != $ID )
+					return new WP_Error( 'user_email', __('Email already exists') );
+			}
+		}
 
-		if ( !$user_pass )
-			$user_pass = WP_Pass::generate_password();
-		$plain_pass = $user_pass;
-		$user_pass  = WP_Pass::hash_password( $user_pass );
+		if ( !$ID || in_array( 'user_url', $fields ) ) {
+			$user_url = clean_url( $user_url );
+		}
 
-		if ( !is_numeric($user_registered) )
-			$user_registered = backpress_gmt_strtotime( $user_registered );
+		if ( !$ID || in_array( 'user_pass', $fields ) ) {
+			if ( !$user_pass )
+				$user_pass = WP_Pass::generate_password();
+			$plain_pass = $user_pass;
+			$user_pass  = WP_Pass::hash_password( $user_pass );
+		}
 
-		if ( !$user_registered || $user_registered < 0 )
-			return new WP_Error( 'user_registered', __('Invalid registration time') );
+		if ( !$ID || in_array( 'user_registered', $fields ) ) {
+			if ( !is_numeric($user_registered) )
+				$user_registered = backpress_gmt_strtotime( $user_registered );
 
-		if ( !$user_registered = @gmdate('Y-m-d H:i:s', $user_registered) )
-			return new WP_Error( 'user_registered', __('Invalid registration timestamp') );
+			if ( !$user_registered || $user_registered < 0 )
+				return new WP_Error( 'user_registered', __('Invalid registration time') );
 
-		if ( !$display_name )
-			$display_name = $user_login;
+			if ( !$user_registered = @gmdate('Y-m-d H:i:s', $user_registered) )
+				return new WP_Error( 'user_registered', __('Invalid registration timestamp') );
+		}
+
+		if ( !$ID || in_array( 'user_display', $fields ) ) {
+			if ( !$display_name )
+				$display_name = $user_login;
+		}
 
 		$db_return = NULL;
-		if ( $ID && NULL !== $this->db->get_var( "SELECT ID FROM {$this->db->users} WHERE ID = '$ID'" ) ) {
-			unset($args['ID']);
-			unset($args['user_registered']);
-			$db_return = $this->db->update( $this->db->users, compact( array_keys($defaults) ), compact('ID') );
-		}
-		if ( $db_return === null ) {
-			$db_return = $this->db->insert( $this->db->users, compact( array_keys($defaults) ) );
+		if ( $ID ) {
+			$db_return = $this->db->update( $this->db->users, compact( $fields ), compact('ID') );
+		} else {
+			$db_return = $this->db->insert( $this->db->users, compact( $fields ) );
+			$ID = $this->db->insert_id;
 		}
 
 		if ( !$db_return )
 			return new WP_Error( 'WP_Users::_put_user', __('Query failed') );
 
-		if ( !$ID )
-			$ID = $this->db->insert_id;
-
 		// Cache the result
-		$user = (object) compact( array_keys($defaults) );
-		$user = $this->append_meta( $user );
+		if ( $ID ) {
+			$this->append_meta( (object) compact( $fields ) );
+		} else {
+			$this->get_user( $ID, array( 'from_cache' => false ) );
+		}
 
 		$args = compact( array_keys($args) );
 		$args['plain_pass'] = $plain_pass;
@@ -118,13 +141,12 @@ class WP_Users {
 	function update_user( $ID, $args = null ) {
 		$args = wp_parse_args( $args );
 
-		$args['output'] = ARRAY_A;
+		$args['output'] = OBJECT;
 		$user = $this->get_user( $ID, $args );
 		if ( !$user || is_wp_error( $user ) )
 			return $user;
 
-		$args = array_merge( $user, $args );
-		$args['ID'] = $user['ID'];
+		$args['ID'] = $user->ID;
 
 		$r = $this->_put_user( $args );
 
@@ -160,9 +182,8 @@ class WP_Users {
 	}
 
 	// $user_id can be user ID#, user_login, user_email (by specifying by = email)
-	// TODO: array of ids
 	function get_user( $user_id = 0, $args = null ) {
-		$defaults = array( 'output' => OBJECT, 'by' => false );
+		$defaults = array( 'output' => OBJECT, 'by' => false, 'from_cache' => true );
 		$args = wp_parse_args( $args, $defaults );
 		extract( $args, EXTR_SKIP );
 
@@ -173,86 +194,79 @@ class WP_Users {
 				if ( !is_wp_error($user) )
 					$users[] = $user;
 			}
-			$user = $users; // for later append_meta call
-		} else {
-			if ( is_numeric( $user_id ) ) {
-				$user_id = (int) $user_id;
+
+			// append_meta does the user object, useremail, userlogins caching
+			$users = $this->append_meta( $users );
+
+			backpress_convert_object( $users, $output );
+			return $users;
+		}
+
+		if ( is_numeric( $user_id ) ) {
+			$user_id = (int) $user_id;
+			if ( $from_cache ) {
 				if ( 0 === $user = wp_cache_get( $user_id, 'users' ) ) {
 					return false;
 				} elseif ( $user ) {
-					switch ( $output ) {
-						case OBJECT  : return $user; break;
-						case ARRAY_A : return get_object_vars($user); break;
-						case ARRAY_N : return array_values(get_object_vars($user)); break;
-					}
+					backpress_convert_object( $user, $output );
 					return $user;
 				}
-				$sql_field = 'ID';
-			} elseif ( 'email' == $by ) {
-				if ( !$this->is_email( $user_id ) )
-					return false;
+			}
+			$sql_field = 'ID';
+		} elseif ( 'email' == $by ) {
+			if ( !$this->is_email( $user_id ) )
+				return false;
+			if ( $from_cache ) {
 				if ( 0 === $ID = wp_cache_get( $user_id, 'useremail' ) )
 					return false;
 				elseif ( $ID ) {
 					$args['by'] = false;
 					return $this->get_user( $ID, $args );
 				}
-				$sql_field = 'user_email';
-			} elseif ( 'nicename' == $by ) { // No cache?
-				$user_id = $this->sanitize_nicename( $user_id );
-				$sql_field = 'user_nicename';
-			} else {
-				$user_id = $this->sanitize_user( $user_id );
+			}
+			$sql_field = 'user_email';
+		} elseif ( 'nicename' == $by ) { // No cache?
+			$user_id = $this->sanitize_nicename( $user_id );
+			$sql_field = 'user_nicename';
+		} else {
+			$user_id = $this->sanitize_user( $user_id );
+			if ( $from_cache ) {
 				if ( 0 === $ID = wp_cache_get( $user_id, 'userlogins' ) )
 					return false;
 				elseif ( $ID )
 					return $this->get_user( $ID, $args );
-				$sql_field = 'user_login';
 			}
-
-			if ( !$user_id )
-				return false;
-
-			$sql = "SELECT * FROM {$this->db->users} WHERE $sql_field = %s"; // ID is already (int)ed
-			$user = $this->db->get_row( $this->db->prepare( $sql, $user_id ) );
-
-			if ( 1 < $this->db->num_rows ) {
-				if ( 'user_email' == $sql_field )
-					$err = __( 'Multiple email matches.  Log in with your username.' );
-				else
-					$err = sprintf( __( 'Multiple %s matches' ), $sql_field );
-				return new WP_Error( $sql_field, $err, $args + array( 'user_id' => $user_id, 'unique' => false ) );
-			}
-
-			if ( $user ) {
-				if ( is_numeric( $user_id ) ); // [sic]
-				elseif ( 'email' == $by )
-					wp_cache_add($user_id, $ID, 'useremail');
-				else
-					wp_cache_add($user_id, $ID, 'userlogins' );
-			} else { // Cache non-existant users.
-				if ( is_numeric( $user_id ) )
-					wp_cache_add($user_id, 0, 'users');
-				elseif ( 'email' == $by )
-					wp_cache_add($user_id, 0, 'useremail');
-				else
-					wp_cache_add($user_id, 0, 'userlogins');
-				return false;
-			}
+			$sql_field = 'user_login';
 		}
 
-		if ( is_array( $user ) ) // each element has already been through the below
-			return $user;
+		if ( !$user_id )
+			return false;
 
-		// append_meta does the user object caching
+		$sql = "SELECT * FROM {$this->db->users} WHERE $sql_field = %s"; // ID is already (int)ed
+		$user = $this->db->get_row( $this->db->prepare( $sql, $user_id ) );
+
+		if ( 1 < $this->db->num_rows ) {
+			if ( 'user_email' == $sql_field )
+				$err = __( 'Multiple email matches.  Log in with your username.' );
+			else
+				$err = sprintf( __( 'Multiple %s matches' ), $sql_field );
+			return new WP_Error( $sql_field, $err, $args + array( 'user_id' => $user_id, 'unique' => false ) );
+		}
+
+		if ( !$user ) { // Cache non-existant users.
+			if ( is_numeric( $user_id ) )
+				wp_cache_add($user_id, 0, 'users');
+			elseif ( 'email' == $by )
+				wp_cache_add($user_id, 0, 'useremail');
+			else
+				wp_cache_add($user_id, 0, 'userlogins');
+			return false;
+		}
+
+		// append_meta does the user object, useremail, userlogins caching
 		$user = $this->append_meta( $user );
 
-		switch ( $output ) {
-			case OBJECT  : return $user; break;
-			case ARRAY_A : return get_object_vars($user); break;
-			case ARRAY_N : return array_values(get_object_vars($user)); break;
-		}
-
+		backpress_convert_object( $user, $output );
 		return $user;
 	}
 
