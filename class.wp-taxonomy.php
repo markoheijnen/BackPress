@@ -282,7 +282,7 @@ class WP_Taxonomy { // [WP8377]
 		$_term = apply_filters("get_$taxonomy", $_term, $taxonomy);
 		$_term = $this->sanitize_term($_term, $taxonomy, $filter);
 
-		backpress_convert_object( $_term );
+		backpress_convert_object( $_term, $output );
 
 		return $_term;
 	}
@@ -341,7 +341,7 @@ class WP_Taxonomy { // [WP8377]
 
 		$term = $this->sanitize_term($term, $taxonomy, $filter);
 
-		backpress_convert_object( $term );
+		backpress_convert_object( $term, $output );
 
 		return $term;
 	}
