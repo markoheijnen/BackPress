@@ -9,10 +9,22 @@ define('EZSQL_VERSION', 'BP1.25');
 define('OBJECT', 'OBJECT', true);
 define('OBJECT_K', 'OBJECT_K', false);
 define('ARRAY_A', 'ARRAY_A', false);
+define('ARRAY_K', 'ARRAY_K', false);
 define('ARRAY_N', 'ARRAY_N', false);
 
-if (!defined('SAVEQUERIES'))
+if ( !defined('SAVEQUERIES') )
 	define('SAVEQUERIES', false);
+
+if ( !defined('BPDB__ERROR_STRING') )
+	define( 'BPDB__ERROR_STRING', 'DB Error: %s, %s: %s' );
+if ( !defined('BPDB__ERROR_HTML') )
+	define( 'BPDB__ERROR_HTML', '<div class="error"><p><strong>DB Error in %3$s:</strong> %1$s</p><pre>%2$s</pre></div>' );
+if ( !defined('BPDB__CONNECT_ERROR_MESSAGE') )
+	define( 'BPDB__CONNECT_ERROR_MESSAGE', 'DB Error: cannot connect' );
+if ( !defined('BPDB__SELECT_ERROR_MESSAGE') )
+	define( 'BPDB__SELECT_ERROR_MESSAGE', 'DB Error: cannot select' );
+if ( !defined( 'BPDB__DB_VERSION_ERROR' ) )
+	define( 'BPDB__DB_VERSION_ERROR', 'DB Requires MySQL version 4.0 or higher' );
 
 class BPDB {
 	var $show_errors = false;
@@ -233,10 +245,8 @@ class BPDB {
 				return false;
 		}
 
+		$caller = $this->get_caller();
 		$error_str = sprintf( BPDB__ERROR_STRING, $str, $this->last_query, $caller );
-
-		if ( $caller = $this->get_caller() )
-			$error_str .= " made by $caller";
 
 		if ( class_exists( 'WP_Error' ) )
 			return new WP_Error( 'db_query', $error_str, array( 'query' => $this->last_query, 'error' => $str, 'caller' => $caller ) );
@@ -268,11 +278,12 @@ class BPDB {
 		if ( !$this->show_errors )
 			return false;
 
-		$str = htmlspecialchars($err['str'], ENT_QUOTES);
+		$str = htmlspecialchars($err['error'], ENT_QUOTES);
 		$query = htmlspecialchars($err['query'], ENT_QUOTES);
 		$caller = htmlspecialchars($err['caller'], ENT_QUOTES);
 
 		// If there is an error then take note of it
+
 		printf( BPDB__ERROR_HTML, $str, $query, $caller );
 	}
 
