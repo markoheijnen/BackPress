@@ -201,9 +201,9 @@ class WP_Taxonomy { // [WP8377]
 		extract($args, EXTR_SKIP);
 
 		if ( 'tt_id' == $field )
-			$field = 'tr.term_taxonomy_id';
+			$field = 'tt.term_taxonomy_id';
 		else
-			$field = 'tr.term_id';
+			$field = 'tt.term_id';
 
 		$order = ( 'desc' == strtolower($order) ) ? 'DESC' : 'ASC';
 
