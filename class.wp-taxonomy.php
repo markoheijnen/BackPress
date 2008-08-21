@@ -636,6 +636,9 @@ class WP_Taxonomy { // [WP8377]
 			$where .= " AND (t.name LIKE '%$search%')";
 		}
 
+		if ( !in_array( $fields, array( 'all', 'ids', 'names', 'tt_ids' ) ) )
+			$fields = 'all';
+
 		$select_this = '';
 		if ( 'all' == $fields )
 			$select_this = 't.*, tt.*';
@@ -643,13 +646,15 @@ class WP_Taxonomy { // [WP8377]
 			$select_this = 't.term_id';
 		else if ( 'names' == $fields )
 			$select_this = 't.name';
+		else if ( 'tt_ids' == $fields )
+			$select_this = 'tt.term_taxonomy_id';
 
 		$query = "SELECT $select_this FROM {$this->db->terms} AS t INNER JOIN {$this->db->term_taxonomy} AS tt ON t.term_id = tt.term_id WHERE tt.taxonomy IN ($in_taxonomies) $where ORDER BY $orderby $order $number";
 
 		if ( 'all' == $fields ) {
 			$terms = $this->db->get_results($query);
 			$this->update_term_cache($terms);
-		} else if ( ('ids' == $fields) || ('names' == $fields) ) {
+		} else {
 			$terms = $this->db->get_col($query);
 		}
 
