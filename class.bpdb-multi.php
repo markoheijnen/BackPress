@@ -79,9 +79,11 @@ class BPDB_Multi extends BPDB {
 	 * @param false|array tables (optional: false)
 	 *	table identifiers are array keys
 	 *	array values
-	 *		empty: set prefix
-	 *		string: set to that array value
-	 *		array: array[0] is DB identifier, array[1] is table name
+	 *		empty: set prefix: array( 'posts' => false, 'users' => false, ... )
+	 *		string: set to that array value: array( 'posts' => 'my_posts', 'users' => 'my_users' )
+	 *		array: array[0] is DB identifier, array[1] is table name: array( 'posts' => array( 'global', 'my_posts' ), 'users' => array( 'users', 'my_users' ) )
+	 *	OR array values (with numeric keys): array( 'posts', 'users', ... )
+	 *
 	 * @return string the previous prefix (mostly only meaningful if all $table parameter was false)
 	 */
 	function set_prefix( $prefix, $tables = false ) {
@@ -96,10 +98,11 @@ class BPDB_Multi extends BPDB {
 			$_tables = $this->tables;
 		}
 		
-		foreach ( $_tables as $index => $table ) {
-			if ( is_array($table) && isset($this->db_servers['dbh_' . $table[0]]) ) {
-				$this->add_db_table( $table[0], $table[1] );
-				$this->$index = $table[1];
+		foreach ( $_tables as $key => $value ) {
+			// array( 'posts' => array( 'global', 'my_posts' ), 'users' => array( 'users', 'my_users' ) )
+			if ( is_array($value) && isset($this->db_servers['dbh_' . $value[0]]) ) {
+				$this->add_db_table( $value[0], $value[1] );
+				$this->$key = $value[1];
 			}
 		}
 

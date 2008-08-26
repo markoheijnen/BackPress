@@ -150,8 +150,10 @@ class BPDB {
 	 * @param false|array tables (optional: false)
 	 *	table identifiers are array keys
 	 *	array values
-	 *		empty: set prefix
-	 *		string: set to that array value
+	 *		empty: set prefix: array( 'posts' => false, 'users' => false, ... )
+	 *		string: set to that array value: array( 'posts' => 'my_posts', 'users' => 'my_users' )
+	 *	OR array values (with numeric keys): array( 'posts', 'users', ... )
+	 *
 	 * @return string the previous prefix (mostly only meaningful if all $table parameter was false)
 	 */
 	function set_prefix( $prefix, $tables = false ) {
@@ -169,11 +171,15 @@ class BPDB {
 			$this->prefix = $prefix;
 		}
 
-		foreach ( $_tables as $index => $table )
-			if (!$table)
-				$this->$index = $prefix . $index;
-			elseif (is_string($table))
-				$this->$index = $table;
+		foreach ( $_tables as $key => $value ) {
+			if ( is_numeric( $key ) ) { // array( 'posts', 'users', ... )
+				$this->$value = $prefix . $value;
+			} elseif ( !$value ) {
+				$this->$key = $prefix . $key; // array( 'posts' => false, 'users' => false, ... )
+			} elseif ( is_string( $value ) ) { // array( 'posts' => 'my_posts', 'users' => 'my_users' )
+				$this->$key = $value;
+			}
+		}
 
 		return $old_prefix;
 	}
