@@ -129,7 +129,7 @@ class BPDB {
 
 		$this->ready = true;
 
-		if ( $this->supports_collation() ) {
+		if ( $this->has_cap( 'collation' ) ) {
 			$collation_query = '';
 			if ( !empty($charset) ) {
 				$collation_query = "SET NAMES '{$charset}'";
