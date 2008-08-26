@@ -496,7 +496,7 @@ endif;
 function backpress_convert_object( &$object, $output ) {
 	if ( is_array( $object ) ) {
 		foreach ( array_keys( $object ) as $key )
-			backpress_convert_object( &$object[$key], $output );
+			backpress_convert_object( $object[$key], $output );
 	} else {
 		switch ( $output ) {
 			case OBJECT  : break;
