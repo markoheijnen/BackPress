@@ -644,8 +644,9 @@ class BPDB {
 		$version = $this->db_version( $dbh_or_table );
 
 		switch ( strtolower( $db_cap ) ) :
-		case 'group_concat' :
 		case 'collation' :
+		case 'group_concat' :
+		case 'subqueries' :
 			return version_compare($version, '4.1', '>=');
 			break;
 		endswitch;
