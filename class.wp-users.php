@@ -279,7 +279,7 @@ class WP_Users {
 		do_action( 'pre_' . __FUNCTION__, $user->ID );
 
 		$r = $this->db->query( $this->db->prepare( "DELETE FROM {$this->db->users} WHERE ID = %d", $user->ID ) );
-		$this->db->query( $this->db->prepare( "DELETE FROM {$this->db->users} WHERE user_id = %d", $user->ID ) );
+		$this->db->query( $this->db->prepare( "DELETE FROM {$this->db->usermeta} WHERE user_id = %d", $user->ID ) );
 
 		wp_cache_delete( $user->ID, 'users' );
 		wp_cache_delete( $user->user_email, 'useremail' );
