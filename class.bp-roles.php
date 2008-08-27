@@ -13,7 +13,7 @@ class BP_Roles {
 	}
 
 	function add_role($role, $display_name, $capabilities = '') {
-		if ( isset($this->roles[$role]) )
+		if ( isset($this->role_objects[$role]) )
 			return;
 
 		$this->role_objects[$role] = new BP_Role($role, $capabilities, $this);
