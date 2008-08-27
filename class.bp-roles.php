@@ -1,47 +1,20 @@
 <?php
 
 class BP_Roles {
-	var $db;
-
-	var $roles;
-
 	var $role_objects = array();
 	var $role_names = array();
-	var $role_key;
-	var $use_db = true;
 
-	function BP_Roles( &$db ) {
+	function BP_Roles() {
 		$this->__construct();
 	}
 
-	function __construct() {
-		$this->db =& $db;
-		$this->role_key =& $this->db->prefix;
-
-		$this->get_roles();
-
-		if ( empty($this->roles) )
-			return;
-
-		$this->role_objects = array();
-		$this->role_names =  array();
-		foreach ($this->roles as $role => $data) {
-			$this->role_objects[$role] = new BP_Role($role, $this->roles[$role]['capabilities'], $this);
-			$this->role_names[$role] = $this->roles[$role]['name'];
-		}
-	}
-
-	function get_roles() {
-		$this->roles = apply_filters( 'get_roles', array() );
+	function __construct( &$db ) {
+		do_action_ref_array('init_roles', array(&$this) );
 	}
 
 	function add_role($role, $display_name, $capabilities = '') {
 		if ( isset($this->roles[$role]) )
 			return;
-
-		$this->roles[$role] = array(
-			'name' => $display_name,
-			'capabilities' => $capabilities);
 
 		$this->role_objects[$role] = new BP_Role($role, $capabilities, $this);
 		$this->role_names[$role] = $display_name;
@@ -54,15 +27,16 @@ class BP_Roles {
 
 		unset($this->role_objects[$role]);
 		unset($this->role_names[$role]);
-		unset($this->roles[$role]);
 	}
 
 	function add_cap($role, $cap, $grant = true) {
-		$this->roles[$role]['capabilities'][$cap] = $grant;
+		if ( isset($this->role_objects[$role]) )
+			$this->role_objects[$role]->add_cap($cap, $grant);
 	}
 
 	function remove_cap($role, $cap) {
-		unset($this->roles[$role]['capabilities'][$cap]);
+		if ( isset($this->role_objects[$role]) )
+			$this->role_objects[$role]->remove_cap($cap, $grant);
 	}
 
 	function &get_role($role) {
@@ -87,35 +61,26 @@ class BP_Roles {
 }
 
 class BP_Role {
-	var $bp_roles;
-
 	var $name;
 	var $capabilities;
 
-	function BP_Role($role, $capabilities, &$bp_roles) {
-		$this->bp_roles =& $bp_roles;
+	function BP_Role($role, $capabilities) {
 		$this->name = $role;
 		$this->capabilities = $capabilities;
 	}
 
 	function add_cap($cap, $grant = true) {
 		$this->capabilities[$cap] = $grant;
-		$this->bp_roles->add_cap($this->name, $cap, $grant);
 	}
 
 	function remove_cap($cap) {
 		unset($this->capabilities[$cap]);
-		$this->bp_roles->remove_cap($this->name, $cap);
 	}
 
 	function has_cap($cap) {
 		$capabilities = apply_filters('role_has_cap', $this->capabilities, $cap, $this->name);
-		if ( !empty($capabilities[$cap]) )
-			return $capabilities[$cap];
-		else
-			return false;
+		$grant = !empty( $capabilities[$cap] );
+		return apply_filters("{$this->name}_has_cap", $grant);
 	}
 
 }
-
-?>
