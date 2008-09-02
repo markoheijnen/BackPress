@@ -8,7 +8,7 @@ class BP_Roles {
 		$this->__construct();
 	}
 
-	function __construct( &$db ) {
+	function __construct() {
 		do_action_ref_array('init_roles', array(&$this) );
 	}
 
