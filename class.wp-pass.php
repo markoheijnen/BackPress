@@ -105,7 +105,6 @@ class WP_Pass {
 	 * @return int A random number between min and max
 	 */
 	function wp_rand( $min = 0, $max = 0 ) {
-		return WP_Pass::wp_rand( $min, $max );
 		global $rnd_value;
 
 		$seed = get_option('random_seed');
