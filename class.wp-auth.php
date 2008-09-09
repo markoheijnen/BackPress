@@ -202,19 +202,27 @@ class WP_Auth {
 			$cookie = $this->generate_auth_cookie($user_id, $expiration, $scheme);
 			if ( is_wp_error( $cookie ) )
 				return $cookie;
-			
+
 			do_action('set_' . $scheme . '_cookie', $cookie, $expire, $expiration, $user_id, $scheme);
-			
+
+			$domain = $_cookie['domain'];
 			$secure = ($scheme == 'secure_auth') ? true : false;
-			
-			setcookie($_cookie['name'], $cookie, $expire, $_cookie['path'], $_cookie['domain'], $secure);
+			$httponly = ($scheme != 'logged_in') ? true : false;
+
+			// Set httponly if the php version is >= 5.2.0
+			if ( version_compare(phpversion(), '5.2.0', 'ge') ) {
+				setcookie($_cookie['name'], $cookie, $expire, $_cookie['path'], $domain, $secure, $httponly);
+			} else {
+				$domain = (empty($domain)) ? $domain : $domain . '; HttpOnly';
+				setcookie($_cookie['name'], $cookie, $expire, $_cookie['path'], $domain, $secure);
+			}
 		}
 		unset($_cookie);
-		
+
 		// Don't set a logged_in cookie infinitely
 		if ($scheme == 'logged_in')
 			return;
-		
+
 		// Set a logged_in cookie
 		$this->set_auth_cookie( $user_id, $expiration, $expire, 'logged_in' );
 	}
