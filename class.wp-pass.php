@@ -91,24 +91,27 @@ class WP_Pass {
 			$chars .= '!@#$%^&*()';
 		$password = '';
 		for ( $i = 0; $i < $length; $i++ )
-			$password .= substr($chars, $this->wp_rand(0, strlen($chars) - 1), 1);
+			$password .= substr($chars, WP_Pass::rand(0, strlen($chars) - 1), 1);
 		return $password;
 	}
 
 	/**
 	 * Generates a random number
 	 *
+	 * Not verbatim WordPress, keeps seed value in a static variable instead
+	 * of storing it in the database.
+	 *
 	 * @since WP 2.6.2
 	 *
 	 * @param int $min Lower limit for the generated number (optional, default is 0)
 	 * @param int $max Upper limit for the generated number (optional, default is 4294967295)
+	 * @static string $seed The seed for the random string
 	 * @return int A random number between min and max
 	 */
-	function wp_rand( $min = 0, $max = 0 ) {
-		return mt_rand( $min, $max ? $max : mt_getrandmax() ); // TEMP
+	function rand( $min = 0, $max = 0 ) {
 		global $rnd_value;
 
-		$seed = get_option('random_seed');
+		static $seed = '';
 
 		// Reset $rnd_value after 14 uses
 		// 32(md5) + 40(sha1) + 40(sha1) / 8 = 14 random numbers from $rnd_value
@@ -117,7 +120,6 @@ class WP_Pass {
 			$rnd_value .= sha1($rnd_value);
 			$rnd_value .= sha1($rnd_value . $seed);
 			$seed = md5($seed . $rnd_value);
-			update_option('random_seed', $seed);
 		}
 
 		// Take the first 8 digits for our value
@@ -133,6 +135,6 @@ class WP_Pass {
 		if ( $max != 0 )
 			$value = $min + (($max - $min + 1) * ($value / (4294967295 + 1)));
 
-		return abs(intval($value)); 
+		return abs(intval($value));
 	}
 }
