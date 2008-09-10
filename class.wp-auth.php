@@ -1,8 +1,8 @@
 <?php
 
 class WP_Auth {
-	var $db;
-	var $users;
+	var $db; // BBPDB object
+	var $users; // WP_Users object
 
 	var $cookies;
 
@@ -10,14 +10,33 @@ class WP_Auth {
 
 	function WP_Auth( &$db, &$users, $cookies ) {
 		$this->__construct( $db, $users, $cookies );
-//		register_shutdown_function( array(&$this, '__destruct') );
 	}
 
+	/**
+	 * @param array $cookies Array indexed by internal name of cookie.  Values are arrays of array defining cookie parameters.
+	 * $cookies = array(
+	 *	'auth' => array(
+	 *		0 => array(
+	 *			'domain' => (string) cookie domain
+	 *			'path' => (string) cookie path
+	 *			'name' => (string) cookie name
+	 *			'secure' => (bool) restrict cookie to HTTPS only
+	 *		)
+	 *	)
+	 * );
+	 *
+	 * At least one cookie is required.  Give it an internal name of 'auth'.
+	 *
+	 * Suggested cookie structure:
+	 * 	logged_in: whether or not a user is logged in.  Send everywhere.
+	 *	auth: used to authorize user's actions.  Send only to domains/paths that need it (e.g. wp-admin/)
+	 *	secure_auth: used to authorize user's actions.  Send only to domains/paths that need it and only over HTTPS
+	 */
 	function __construct( &$db, &$users, $cookies ) {
 		$this->db =& $db;
 		$this->users =& $users;
 		
-		$cookies = wp_parse_args( $cookies, array( 'logged_in' => null, 'auth' => null, 'secure_auth' => null ) );
+		$cookies = wp_parse_args( $cookies, array( 'auth' => null ) );
 		$_cookies = array();
 		foreach ($cookies as $_scheme => $_scheme_cookies) {
 			foreach ($_scheme_cookies as $_scheme_cookie) {
@@ -29,9 +48,6 @@ class WP_Auth {
 		$this->cookies = $_cookies;
 		unset($_cookies);
 	}
-
-//	function __destruct() {
-//	}
 
 	/**
 	 * set_current_user() - Changes the current user by ID or name
@@ -61,7 +77,10 @@ class WP_Auth {
 		if ( isset($this->current->ID) && $user_id == $this->current->ID )
 			return $this->current;
 
-		$this->current = new WP_User( $user_id );
+		if ( class_exists( 'WP_User' ) )
+			$this->current = new WP_User( $user_id );
+		else
+			$this->current =& $user;
 
 		// WP add_action( 'set_current_user', 'setup_userdata', 1 );
 
@@ -77,13 +96,13 @@ class WP_Auth {
 	 * user will be set to the logged in person. If no user is logged in, then
 	 * it will set the current user to 0, which is invalid and won't have any
 	 * permissions.
- 	*
+ 	 *
 	 * @since 0.71
- 	* @uses $current_user Checks if the current user is set
- 	* @uses wp_validate_auth_cookie() Retrieves current logged in user.
- 	*
- 	* @return bool|null False on XMLRPC Request and invalid auth cookie. Null when current user set
- 	*/
+ 	 * @uses $current_user Checks if the current user is set
+ 	 * @uses wp_validate_auth_cookie() Retrieves current logged in user.
+ 	 *
+ 	 * @return bool|null False on XMLRPC Request and invalid auth cookie. Null when current user set
+ 	 */
 	function get_current_user() {
 		if ( defined('XMLRPC_REQUEST') && XMLRPC_REQUEST ) // Why?
 			return false;
@@ -190,13 +209,18 @@ class WP_Auth {
 	 * @since 2.5
 	 *
 	 * @param int $user_id User ID
-	 * @param bool $remember Whether to remember the user or not
+	 * @param int $expiration the UNIX time after which the cookie's authentication token is no longer valid
+	 * @param int $expire the UNIX time at which the cookie expires
+	 * @param int $scheme name of the 
 	 */
 	function set_auth_cookie( $user_id, $expiration = 0, $expire = 0, $scheme = 'auth' ) {
-		if ( !$expiration = $expire = (int) $expiration ) {
-			error_log('Weirdness');
+		if ( !isset($this->cookies[$scheme]) )
+			return;
+
+		if ( !$expiration = absint( $expiration ) )
 			$expiration = time() + 172800; // 2 days
-		}
+
+		$expire = absint( $expire );
 
 		foreach ($this->cookies[$scheme] as $_cookie) {
 			$cookie = $this->generate_auth_cookie($user_id, $expiration, $scheme);
@@ -206,25 +230,17 @@ class WP_Auth {
 			do_action('set_' . $scheme . '_cookie', $cookie, $expire, $expiration, $user_id, $scheme);
 
 			$domain = $_cookie['domain'];
-			$secure = ($scheme == 'secure_auth') ? true : false;
-			$httponly = ($scheme != 'logged_in') ? true : false;
+			$secure = isset($_cookie['secure']) ? (bool) $_cookie['secure'] : false;
 
 			// Set httponly if the php version is >= 5.2.0
 			if ( version_compare(phpversion(), '5.2.0', 'ge') ) {
-				setcookie($_cookie['name'], $cookie, $expire, $_cookie['path'], $domain, $secure, $httponly);
+				setcookie($_cookie['name'], $cookie, $expire, $_cookie['path'], $domain, $secure, true);
 			} else {
 				$domain = (empty($domain)) ? $domain : $domain . '; HttpOnly';
 				setcookie($_cookie['name'], $cookie, $expire, $_cookie['path'], $domain, $secure);
 			}
 		}
 		unset($_cookie);
-
-		// Don't set a logged_in cookie infinitely
-		if ($scheme == 'logged_in')
-			return;
-
-		// Set a logged_in cookie
-		$this->set_auth_cookie( $user_id, $expiration, $expire, 'logged_in' );
 	}
 
 	/**
