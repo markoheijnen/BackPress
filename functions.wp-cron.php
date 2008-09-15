@@ -283,7 +283,7 @@ function wp_get_schedule($hook, $args = array()) {
  * @return array CRON info array.
  */
 function _get_cron_array()  {
-	$cron = get_option('cron');
+	$cron = BP_Options::get( 'cron' );
 	if ( ! is_array($cron) )
 		return false;
 
@@ -305,7 +305,7 @@ function _get_cron_array()  {
  */
 function _set_cron_array($cron) {
 	$cron['version'] = 2;
-	update_option( 'cron', $cron );
+	BP_Options::update( 'cron', $cron );
 }
 
 /**
@@ -333,7 +333,7 @@ function _upgrade_cron_array($cron) {
 	}
 
 	$new_cron['version'] = 2;
-	update_option( 'cron', $new_cron );
+	BP_Options::update( 'cron', $new_cron );
 	return $new_cron;
 }
 
