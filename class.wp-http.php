@@ -187,12 +187,10 @@ class WP_Http {
 	 * @return boolean
 	 */
 	function request( $url, $args = array() ) {
-		global $wp_version;
-
 		$defaults = array(
 			'method' => 'GET', 'timeout' => apply_filters('http_request_timeout', 3),
 			'redirection' => 5, 'httpversion' => '1.0',
-			'user-agent' => apply_filters('http_headers_useragent', 'WordPress/' . $wp_version ),
+			'user-agent' => apply_filters('http_headers_useragent', BP_Options::get('wp_http_version') ),
 			'blocking' => true,
 			'headers' => array(), 'body' => null
 		);
