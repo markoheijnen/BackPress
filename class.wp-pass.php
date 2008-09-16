@@ -1,5 +1,12 @@
 <?php
 
+
+
+if (!class_exists('BP_Options'))
+	die('BP_Options class has not been loaded for this application');
+
+
+
 class WP_Pass {
 	/**
 	 * Create a hash (encrypt) of a plain text password
@@ -111,7 +118,7 @@ class WP_Pass {
 	function rand( $min = 0, $max = 0 ) {
 		global $rnd_value;
 
-		static $seed = '';
+		$seed = BP_Options::get('seed');
 
 		// Reset $rnd_value after 14 uses
 		// 32(md5) + 40(sha1) + 40(sha1) / 8 = 14 random numbers from $rnd_value
@@ -120,6 +127,7 @@ class WP_Pass {
 			$rnd_value .= sha1($rnd_value);
 			$rnd_value .= sha1($rnd_value . $seed);
 			$seed = md5($seed . $rnd_value);
+			BP_Options::update('seed', $seed);
 		}
 
 		// Take the first 8 digits for our value
