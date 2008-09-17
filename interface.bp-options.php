@@ -3,7 +3,9 @@
 /**
  * Interface for BP_Options;
  *
- * Must be implemented by the host application for BackPress to operate
+ * A BP_Options class must be implemented by the host application for
+ * BackPress to operate. This interface supplies a boilerplate for that
+ * class but can only be implemented in PHP 5 environments.
  *
  * @package BackPress
  **/
