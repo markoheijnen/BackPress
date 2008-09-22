@@ -348,9 +348,6 @@ class BPDB {
 		if ( function_exists('apply_filters') )
 			$query = apply_filters('query', $query);
 
-		// Reduce "`foo` IN (n)" to "`foo` = n" where n is only one value for better query caching
-		$query = preg_replace('@((`?[^\s|`]+`?)(\.?)(`?[^\s|`]+`?)\s+IN\s*\(\s*(\'?\s*[^\s|\'|,]+\s*\'?)\s*\))@im', '$2$3$4 = $5', $query);
-
 		// initialise return
 		$return_val = 0;
 		$this->flush();
