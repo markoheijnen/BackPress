@@ -277,7 +277,7 @@ class BPDB {
 		}
 
 		$log_file = ini_get('error_log');
-		if ( !empty($log_file) && ('syslog' != $log_file) && !is_writable($log_file) && function_exists( 'error_log' ) )
+		if ( !empty($log_file) && ('syslog' != $log_file) && is_writable($log_file) && function_exists( 'error_log' ) )
 			error_log($err['error_str'], 0);
 
 		// Is error output turned on or not
