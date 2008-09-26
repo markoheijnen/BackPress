@@ -91,7 +91,7 @@ class WP_Pass {
 	 * @since WP 2.5
 	 *
 	 * @return string The random password
-	 **/
+	 */
 	function generate_password($length = 12, $special_chars = true) {
 		$chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
 		if ( $special_chars )

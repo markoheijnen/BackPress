@@ -8,7 +8,7 @@
  * class but can only be implemented in PHP 5 environments.
  *
  * @package BackPress
- **/
+ */
 interface BP_Options_Interface
 {
 	// Returns the prefix to be appended to the beginning of the option key
