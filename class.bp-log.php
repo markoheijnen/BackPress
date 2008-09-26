@@ -329,7 +329,7 @@ class BP_Log
 		}
 
 		if (is_string($message)) {
-			if (($level === BP_LOG_DEBUG || $message === '') && $prefix) {
+			if (($level === BP_LOG_DEBUG || $message === '') && $prefix != 'status') {
 				$lines[] = 'string(' . strlen($message) . ') ("' . $message . '")';
 			} else {
 				$lines[] = $message;
