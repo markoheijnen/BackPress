@@ -1,8 +1,9 @@
 <?php
 
 
-
-// BackPress logging level constants
+/**
+ * BackPress logging level constants
+ */
 define('BP_LOG_NONE',    0);
 define('BP_LOG_FAIL',    1);
 define('BP_LOG_ERROR',   2);
@@ -10,7 +11,9 @@ define('BP_LOG_WARNING', 4);
 define('BP_LOG_NOTICE',  8);
 define('BP_LOG_DEBUG',   16);
 
-// Combination of all errors (excluding none and debug)
+/**
+ * Combination of all errors (excluding none and debug)
+ */
 define('BP_LOG_ALL', BP_LOG_FAIL + BP_LOG_ERROR + BP_LOG_WARNING + BP_LOG_NOTICE);
 
 
