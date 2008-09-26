@@ -169,5 +169,3 @@ function _pad_term_counts(&$terms, $taxonomy) {
 	global $wp_taxonomy_object;
 	return $wp_taxonomy_object->_pad_term_counts(&$terms, $taxonomy);
 }
-
-?>

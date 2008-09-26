@@ -336,5 +336,3 @@ function _upgrade_cron_array($cron) {
 	BP_Options::update( 'cron', $new_cron );
 	return $new_cron;
 }
-
-?>

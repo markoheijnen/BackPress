@@ -258,5 +258,3 @@ class WP_Auth {
 		unset($_scheme, $_scheme_cookies);
 	}
 }
-
-?>

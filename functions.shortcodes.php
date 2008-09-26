@@ -277,5 +277,3 @@ function strip_shortcodes( $content ) {
 
 	return preg_replace('/'.$pattern.'/s', '', $content);
 }
-
-?>

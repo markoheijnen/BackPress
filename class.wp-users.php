@@ -435,5 +435,3 @@ class WP_Users {
 	}
 
 }
-
-?>

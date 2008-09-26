@@ -99,5 +99,3 @@ function _mb_strcut( $str, $start, $length=null, $encoding=null ) {
 	return implode( '', $chars );
 }
 endif;
-
-?>

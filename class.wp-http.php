@@ -1188,5 +1188,3 @@ function wp_remote_retrieve_body(&$response) {
 
 	return $response['body'];
 }
-
-?>

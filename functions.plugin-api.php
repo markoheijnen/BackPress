@@ -595,5 +595,3 @@ function _wp_filter_build_unique_id($tag, $function, $priority) {
 	else if ( is_string($function[0]) )
 		return $function[0].$function[1];
 }
-
-?>
