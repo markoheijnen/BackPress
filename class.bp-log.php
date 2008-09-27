@@ -345,7 +345,7 @@ class BP_Log
 			}
 			$tabs++;
 			foreach ($message as $key => $value) {
-				$array = $this->format_message($value, $level, $tabs);
+				$array = $this->format_message($value, $level, false, $tabs);
 				if (is_array($array)) {
 					$array[0] = str_repeat('    ', $tabs) . $key . ' => ' . $array[0];
 					$lines = array_merge($lines, $array);
