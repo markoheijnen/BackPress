@@ -266,10 +266,10 @@ class BP_Log
 				
 				if (!$this->console_javascript_loaded) {
 					// Queue it for logging onload
-					$this->console_javascript_onloads[] = array('message' => $_lines, 'level' => $level);
+					$this->console_javascript_onloads[] = array('message' => $_lines, 'level' => $level, 'time' => date('c'));
 				} else {
 					// Log it now
-					echo '<script type="text/javascript" charset="utf-8">bp_log_add(\'' . $_lines . '\', ' . $level . ');</script>' . "\n";
+					echo '<script type="text/javascript" charset="utf-8">bp_log_add(\'' . $_lines . '\', ' . $level . ', \'' . date('c') . '\');</script>' . "\n";
 				}
 				break;
 		}
@@ -329,7 +329,7 @@ class BP_Log
 		}
 
 		if (is_string($message)) {
-			if (($level === BP_LOG_DEBUG || $message === '') && $prefix != 'status') {
+			if ($level === BP_LOG_DEBUG || $message === '') {
 				$lines[] = 'string(' . strlen($message) . ') ("' . $message . '")';
 			} else {
 				$lines[] = $message;
@@ -485,7 +485,7 @@ class BP_Log
 		var BP_LOG_NOTICE  = 8;
 		var BP_LOG_DEBUG   = 16;
 		
-		function bp_log_send(message, level) {
+		function bp_log_send(message, level, time) {
 			if (window.console) {
 				// Works in later Safari and Firefox with Firebug
 				switch (level) {
@@ -494,16 +494,16 @@ class BP_Log
 						break;
 					case BP_LOG_FAIL:
 					case BP_LOG_ERROR:
-						window.console.error(message);
+						window.console.error("[" + time + "] " + message);
 						break;
 					case BP_LOG_WARNING:
-						window.console.warn(message);
+						window.console.warn("[" + time + "] " + message);
 						break;
 					case BP_LOG_NOTICE:
-						window.console.info(message);
+						window.console.info("[" + time + "] " + message);
 						break;
 					case BP_LOG_DEBUG:
-						window.console.log(message);
+						window.console.log("[" + time + "] " + message);
 						break;
 					default:
 						break;
@@ -526,7 +526,7 @@ class BP_Log
 		function bp_log_onload() {
 <?php
 		foreach ($this->console_javascript_onloads as $onload) {
-			echo "\t\t\t" . 'bp_log_send(\'' . $onload['message'] . '\', ' . $onload['level'] . ');' . "\n";
+			echo "\t\t\t" . 'bp_log_send(\'' . $onload['message'] . '\', ' . $onload['level'] . ', \'' . $onload['time'] . '\');' . "\n";
 		}
 ?>
 			bp_log_process();
