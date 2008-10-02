@@ -9,6 +9,10 @@
  * @subpackage Cache
  */
 
+
+
+require_once( 'class.wp-object-cache.php' );
+
 /**
  * Adds data to the cache, if the cache key doesn't aleady exist.
  *
