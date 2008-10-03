@@ -104,13 +104,12 @@ class WP_Auth {
  	 * @return bool|null False on XMLRPC Request and invalid auth cookie. Null when current user set
  	 */
 	function get_current_user() {
-		if ( defined('XMLRPC_REQUEST') && XMLRPC_REQUEST ) // Why?
-			return false;
-
 		if ( !empty($this->current) )
 			return $this->current;
 
-		if ( $user_id = $this->validate_auth_cookie(null, 'logged_in') )
+		if ( defined('XMLRPC_REQUEST') && XMLRPC_REQUEST )
+			$this->set_current_user( 0 );
+		elseif ( $user_id = $this->validate_auth_cookie(null, 'logged_in') )
 			$this->set_current_user( $user_id );
 		else
 			$this->set_current_user( 0 );
