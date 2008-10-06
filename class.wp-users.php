@@ -183,12 +183,14 @@ class WP_Users {
 
 	// $user_id can be user ID#, user_login, user_email (by specifying by = email)
 	function get_user( $user_id = 0, $args = null ) {
-		$defaults = array( 'output' => OBJECT, 'by' => false, 'from_cache' => true );
+		$defaults = array( 'output' => OBJECT, 'by' => false, 'from_cache' => true, 'append_meta' => true );
 		$args = wp_parse_args( $args, $defaults );
 		extract( $args, EXTR_SKIP );
 
 		if ( is_array( $user_id ) ) {
 			$users = array();
+			// Don't append meta when fetching the basic user data
+			$args['append_meta'] = false;
 			foreach ( $user_id as $the_id ) {
 				$user = $this->get_user( $the_id, $args );
 				if ( !is_wp_error($user) )
@@ -264,7 +266,8 @@ class WP_Users {
 		}
 
 		// append_meta does the user object, useremail, userlogins caching
-		$user = $this->append_meta( $user );
+		if ($append_meta)
+			$user = $this->append_meta( $user );
 
 		backpress_convert_object( $user, $output );
 		return $user;
