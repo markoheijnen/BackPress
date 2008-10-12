@@ -25,4 +25,4 @@ interface BP_Options_Interface
 	
 	// Deletes an existing option
 	function delete($option);
-} // END interface BB_Options_Interface
+} // END interface BP_Options_Interface
