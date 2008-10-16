@@ -378,7 +378,7 @@ class BPDB {
 			return $this->print_error($this->last_error);
 		}
 
-		if ( preg_match("/^\\s*(insert|delete|update|replace) /i",$query) ) {
+		if ( preg_match("/^\\s*(insert|delete|update|replace|alter) /i",$query) ) {
 			$this->rows_affected = mysql_affected_rows($dbh);
 			// Take note of the insert_id
 			if ( preg_match("/^\\s*(insert|replace) /i",$query) ) {
