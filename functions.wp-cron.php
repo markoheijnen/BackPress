@@ -183,10 +183,9 @@ function spawn_cron() {
  */
 function wp_cron() {
 	// Prevent infinite loops caused by cron page requesting itself
-	$request_uri = parse_url($_SERVER['REQUEST_URI']);
 	$cron_uri = parse_url(BP_Options::get('cron_uri'));
-	
-	if ( $request_uri['host'] == $cron_uri['host'] && $request_uri['path'] == $cron_uri['path'] )
+
+	if ( strpos($_SERVER['REQUEST_URI'], $cron_uri['path'] ) !== false )
 		return;
 
 	$crons = _get_cron_array();
