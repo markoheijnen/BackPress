@@ -1,6 +1,7 @@
 <?php
+// Last sync [WP9916]
 
-class WP_Taxonomy { // [WP8782]
+class WP_Taxonomy {
 	var $db;
 	var $taxonomioes = array();
 
@@ -20,18 +21,18 @@ class WP_Taxonomy { // [WP8782]
 	 * Return all of the taxonomy names that are of $object_type.
 	 *
 	 * It appears that this function can be used to find all of the names inside of
-	 * $this->taxonomies global variable.
+	 * $this->taxonomies variable.
 	 *
-	 * <code><?php $taxonomies = get_object_taxonomies('post'); ?></code> Should
+	 * <code><?php $taxonomies = $this->get_object_taxonomies('post'); ?></code> Should
 	 * result in <code>Array('category', 'post_tag')</code>
 	 *
 	 * @package WordPress
 	 * @subpackage Taxonomy
-	 * @since 2.3
-	 * 
+	 * @since 2.3.0
+	 *
 	 * @uses $this->taxonomies
 	 *
-	 * @param string $object_type Name of the type of taxonomy object
+	 * @param array|string|object $object_type Name of the type of taxonomy object, or an object (row from posts)
 	 * @return array The names of all taxonomy of $object_type.
 	 */
 	function get_object_taxonomies($object_type) {
@@ -55,10 +56,10 @@ class WP_Taxonomy { // [WP8782]
 	 *
 	 * @package WordPress
 	 * @subpackage Taxonomy
-	 * @since 2.3
+	 * @since 2.3.0
 	 *
 	 * @uses $this->taxonomies
-	 * @uses is_taxonomy() Checks whether taxonomy exists
+	 * @uses $this->is_taxonomy() Checks whether taxonomy exists
 	 *
 	 * @param string $taxonomy Name of taxonomy object to return
 	 * @return object|bool The Taxonomy Object or false if $taxonomy doesn't exist
@@ -75,7 +76,7 @@ class WP_Taxonomy { // [WP8782]
 	 *
 	 * @package WordPress
 	 * @subpackage Taxonomy
-	 * @since 2.3
+	 * @since 2.3.0
 	 * 
 	 * @uses $this->taxonomies
 	 *
@@ -96,10 +97,10 @@ class WP_Taxonomy { // [WP8782]
 	 *
 	 * @package WordPress
 	 * @subpackage Taxonomy
-	 * @since 2.3
+	 * @since 2.3.0
 	 *
-	 * @uses is_taxonomy() Checks whether taxonomy exists
-	 * @uses get_taxonomy() Used to get the taxonomy object
+	 * @uses $this->is_taxonomy() Checks whether taxonomy exists
+	 * @uses $this->get_taxonomy() Used to get the taxonomy object
 	 *
 	 * @param string $taxonomy Name of taxonomy object
 	 * @return bool Whether the taxonomy is hierarchical
@@ -137,7 +138,7 @@ class WP_Taxonomy { // [WP8782]
 	 *
 	 * @package WordPress
 	 * @subpackage Taxonomy
-	 * @since 2.3
+	 * @since 2.3.0
 	 * @uses $this->taxonomies Inserts new taxonomy object into the list
 	 * 
 	 * @param string $taxonomy Name of taxonomy object
@@ -174,7 +175,7 @@ class WP_Taxonomy { // [WP8782]
 	 *
 	 * @package WordPress
 	 * @subpackage Taxonomy
-	 * @since 2.3
+	 * @since 2.3.0
 	 *
 	 * @uses wp_parse_args() Creates an array from string $args.
 	 *
@@ -247,10 +248,10 @@ class WP_Taxonomy { // [WP8782]
 	 *
 	 * @package WordPress
 	 * @subpackage Taxonomy
-	 * @since 2.3
+	 * @since 2.3.0
 	 *
-	 * @uses sanitize_term() Cleanses the term based on $filter context before returning.
-	 * @see sanitize_term_field() The $context param lists the available values for get_term_by() $filter param.
+	 * @uses $this->sanitize_term() Cleanses the term based on $filter context before returning.
+	 * @see $this->sanitize_term_field() The $context param lists the available values for get_term_by() $filter param.
 	 *
 	 * @param int|object $term If integer, will get from database. If object will apply filters and return $term.
 	 * @param string $taxonomy Taxonomy name that $term is part of.
@@ -265,7 +266,7 @@ class WP_Taxonomy { // [WP8782]
 			return $error;
 		}
 
-		if ( ! is_taxonomy($taxonomy) ) {
+		if ( !$this->is_taxonomy($taxonomy) ) {
 			$error = new WP_Error('invalid_taxonomy', __('Invalid Taxonomy'));
 			return $error;
 		}
@@ -304,10 +305,10 @@ class WP_Taxonomy { // [WP8782]
 	 *
 	 * @package WordPress
 	 * @subpackage Taxonomy
-	 * @since 2.3
+	 * @since 2.3.0
 	 *
-	 * @uses sanitize_term() Cleanses the term based on $filter context before returning.
-	 * @see sanitize_term_field() The $context param lists the available values for get_term_by() $filter param.
+	 * @uses $this->sanitize_term() Cleanses the term based on $filter context before returning.
+	 * @see $this->sanitize_term_field() The $context param lists the available values for get_term_by() $filter param.
 	 *
 	 * @param string $field Either 'slug', 'name', 'id', or 'tt_id'
 	 * @param string|int $value Search for this term value
@@ -359,10 +360,10 @@ class WP_Taxonomy { // [WP8782]
 	 * 
 	 * @package WordPress
 	 * @subpackage Taxonomy
-	 * @since 2.3
+	 * @since 2.3.0
 	 *
-	 * @uses _get_term_hierarchy()
-	 * @uses get_term_children() Used to get the children of both $taxonomy and the parent $term
+	 * @uses $this->_get_term_hierarchy()
+	 * @uses $this->get_term_children() Used to get the children of both $taxonomy and the parent $term
 	 *
 	 * @param string $term Name of Term to get children
 	 * @param string $taxonomy Taxonomy Name
@@ -396,9 +397,9 @@ class WP_Taxonomy { // [WP8782]
 	 *
 	 * @package WordPress
 	 * @subpackage Taxonomy
-	 * @since 2.3
+	 * @since 2.3.0
 	 *
-	 * @uses sanitize_term_field() Passes the return value in sanitize_term_field on success.
+	 * @uses $this->sanitize_term_field() Passes the return value in sanitize_term_field on success.
 	 *
 	 * @param string $field Term field to fetch
 	 * @param int $term Term ID
@@ -429,9 +430,9 @@ class WP_Taxonomy { // [WP8782]
 	 * 
 	 * @package WordPress
 	 * @subpackage Taxonomy
-	 * @since 2.3
+	 * @since 2.3.0
 	 *
-	 * @uses sanitize_term() Passes the return value on success
+	 * @uses $this->sanitize_term() Passes the return value on success
 	 *
 	 * @param int|object $id Term ID or Object
 	 * @param string $taxonomy Taxonomy Name
@@ -450,7 +451,7 @@ class WP_Taxonomy { // [WP8782]
 	}
 
 	/**
-	 * Retrieve the terms in taxonomy or list of taxonomies.
+	 * Retrieve the terms in a given taxonomy or list of taxonomies.
 	 *
 	 * You can fully inject any customizations to the query before it is sent, as
 	 * well as control the output with a filter.
@@ -463,37 +464,64 @@ class WP_Taxonomy { // [WP8782]
 	 * The 'list_terms_exclusions' filter passes the compiled exclusions along with
 	 * the $args.
 	 *
-	 * The list that $args can contain, which will overwrite the defaults.
+	 * The list of arguments that $args can contain, which will overwrite the defaults:
 	 *
 	 * orderby - Default is 'name'. Can be name, count, or nothing (will use
 	 * term_id).
-	 * 
+	 *
 	 * order - Default is ASC. Can use DESC.
-	 * hide_empty - Default is true. Will not return empty $terms.
-	 * fields - Default is all.
-	 * slug - Any terms that has this value. Default is empty string.
-	 * hierarchical - Whether to return hierarchical taxonomy. Default is true.
-	 * name__like - Default is empty string.
 	 *
-	 * The argument 'pad_counts' will count all of the children along with the
-	 * $terms.
+	 * hide_empty - Default is true. Will not return empty terms, which means
+	 * terms whose count is 0 according to the given taxonomy.
+	 * 
+	 * exclude - Default is an empty string.  A comma- or space-delimited string
+	 * of term ids to exclude from the return array.  If 'include' is non-empty, 
+	 * 'exclude' is ignored.
 	 *
-	 * The 'get' argument allows for overwriting 'hide_empty' and 'child_of', which
-	 * can be done by setting the value to 'all', instead of its default empty
-	 * string value.
+	 * include - Default is an empty string.  A comma- or space-delimited string
+	 * of term ids to include in the return array.
+	 * 
+	 * number - The maximum number of terms to return.  Default is empty.
+	 * 
+	 * offset - The number by which to offset the terms query.
 	 *
-	 * The 'child_of' argument will be used if you use multiple taxonomy or the
-	 * first $taxonomy isn't hierarchical or 'parent' isn't used. The default is 0,
-	 * which will be translated to a false value. If 'child_of' is set, then
-	 * 'child_of' value will be tested against $taxonomy to see if 'child_of' is
-	 * contained within. Will return an empty array if test fails.
+	 * fields - Default is 'all', which returns an array of term objects. 
+	 * If 'fields' is 'ids' or 'names', returns an array of
+	 * integers or strings, respectively.
 	 *
-	 * If 'parent' is set, then it will be used to test against the first taxonomy.
-	 * Much like 'child_of'. Will return an empty array if the test fails.
+	 * slug - Returns terms whose "slug" matches this value. Default is empty string.
+	 * 
+	 * hierarchical - Whether to include terms that have non-empty descendants
+	 * (even if 'hide_empty' is set to true).
+	 * 
+	 * search - Returned terms' names will contain the value of 'search',
+	 * case-insensitive.  Default is an empty string.
+	 *
+	 * name__like - Returned terms' names will begin with the value of 'name__like',
+	 * case-insensitive. Default is empty string.
+	 *
+	 * The argument 'pad_counts', if set to true will include the quantity of a term's
+	 * children in the quantity of each term's "count" object variable.
+	 *
+	 * The 'get' argument, if set to 'all' instead of its default empty string,
+	 * returns terms regardless of ancestry or whether the terms are empty.
+	 *
+	 * The 'child_of' argument, when used, should be set to the integer of a term ID.  Its default
+	 * is 0.  If set to a non-zero value, all returned terms will be descendants 
+	 * of that term according to the given taxonomy.  Hence 'child_of' is set to 0 
+	 * if more than one taxonomy is passed in $taxonomies, because multiple taxonomies 
+	 * make term ancestry ambiguous.
+	 *
+	 * The 'parent' argument, when used, should be set to the integer of a term ID.  Its default is
+	 * the empty string '', which has a different meaning from the integer 0.
+	 * If set to an integer value, all returned terms will have as an immediate 
+	 * ancestor the term whose ID is specified by that integer according to the given taxonomy.
+	 * The 'parent' argument is different from 'child_of' in that a term X is considered a 'parent'
+	 * of term Y only if term X is the father of term Y, not its grandfather or great-grandfather, etc.
 	 *
 	 * @package WordPress
 	 * @subpackage Taxonomy
-	 * @since 2.3
+	 * @since 2.3.0
 	 *
 	 * @uses wp_parse_args() Merges the defaults with those defined by $args and allows for strings.
 	 *
@@ -555,12 +583,16 @@ class WP_Taxonomy { // [WP8782]
 		// $args can be whatever, only use the args defined in defaults to compute the key
 		$filter_key = ( has_filter('list_terms_exclusions') ) ? serialize($GLOBALS['wp_filter']['list_terms_exclusions']) : '';
 		$key = md5( serialize( compact(array_keys($defaults)) ) . serialize( $taxonomies ) . $filter_key );
+		$last_changed = wp_cache_get('last_changed', 'terms');
+		if ( !$last_changed ) {
+			$last_changed = time();
+			wp_cache_set('last_changed', $last_changed, 'terms');
+		}
+		$cache_key = "get_terms:$key:$last_changed";
 
-		if ( $cache = wp_cache_get( 'get_terms', 'terms' ) ) {
-			if ( isset( $cache[ $key ] ) ) {
-				$terms = apply_filters('get_terms', $cache[$key], $taxonomies, $args);
-				return $terms;
-			}
+		if ( $cache = wp_cache_get( $cache_key, 'terms' ) ) {
+			$terms = apply_filters('get_terms', $cache, $taxonomies, $args);
+			return $terms;
 		}
 
 		if ( 'count' == $orderby )
@@ -666,7 +698,8 @@ class WP_Taxonomy { // [WP8782]
 		if ( empty($terms) ) {
 			$cache[ $key ] = array();
 			wp_cache_set( 'get_terms', $cache, 'terms' );
-			return apply_filters('get_terms', array(), $taxonomies, $args);
+			$terms = apply_filters('get_terms', array(), $taxonomies, $args);
+			return $terms;
 		}
 
 		if ( $child_of || $hierarchical ) {
@@ -696,8 +729,18 @@ class WP_Taxonomy { // [WP8782]
 		}
 		reset ( $terms );
 
-		$cache[ $key ] = $terms;
-		wp_cache_set( 'get_terms', $cache, 'terms' );
+		$_terms = array();
+		if ( 'ids' == $fields ) {
+			while ( $term = array_shift($terms) )
+				$_terms[] = $term->term_id;
+			$terms = $_terms;
+		} elseif ( 'names' == $fields ) {
+			while ( $term = array_shift($terms) )
+				$_terms[] = $term->name;
+			$terms = $_terms;
+		}
+
+		wp_cache_add( $cache_key, $terms, 'terms' );
 
 		$terms = apply_filters('get_terms', $terms, $taxonomies, $args);
 		return $terms;
@@ -710,7 +753,7 @@ class WP_Taxonomy { // [WP8782]
 	 *
 	 * @package WordPress
 	 * @subpackage Taxonomy
-	 * @since 2.3
+	 * @since 2.3.0
 	 *
 	 * @param int|string $term The term to check
 	 * @param string $taxonomy The taxonomy name to use
@@ -730,7 +773,7 @@ class WP_Taxonomy { // [WP8782]
 				return $this->db->get_var( $this->db->prepare( $select . $where, $term ) );
 		}
 
-		if ( '' === $slug = sanitize_title($term) )
+		if ( '' === $slug = $this->sanitize_term_slug($term) )
 			return 0;
 
 		$where = 't.slug = %s';
@@ -768,9 +811,9 @@ class WP_Taxonomy { // [WP8782]
 	 *
 	 * @package WordPress
 	 * @subpackage Taxonomy
-	 * @since 2.3
+	 * @since 2.3.0
 	 *
-	 * @uses sanitize_term_field Used to sanitize all fields in a term
+	 * @uses $this->sanitize_term_field Used to sanitize all fields in a term
 	 *
 	 * @param array|object $term The term to check
 	 * @param string $taxonomy The taxonomy name to use
@@ -778,6 +821,7 @@ class WP_Taxonomy { // [WP8782]
 	 * @return array|object Term with all fields sanitized
 	 */
 	function sanitize_term($term, $taxonomy, $context = 'display') {
+
 		if ( 'raw' == $context )
 			return $term;
 
@@ -787,12 +831,22 @@ class WP_Taxonomy { // [WP8782]
 		if ( is_object($term) )
 			$do_object = true;
 
+		$term_id = $do_object ? $term->term_id : (isset($term['term_id']) ? $term['term_id'] : 0);
+
 		foreach ( (array) $fields as $field ) {
-			if ( $do_object )
-				$term->$field = $this->sanitize_term_field($field, $term->$field, $term->term_id, $taxonomy, $context);
-			else
-				$term[$field] = $this->sanitize_term_field($field, $term[$field], $term['term_id'], $taxonomy, $context);
+			if ( $do_object ) {
+				if ( isset($term->$field) )
+					$term->$field = $this->sanitize_term_field($field, $term->$field, $term_id, $taxonomy, $context);
+			} else {
+				if ( isset($term[$field]) )
+					$term[$field] = $this->sanitize_term_field($field, $term[$field], $term_id, $taxonomy, $context);
+			}
 		}
+
+		if ( $do_object )
+			$term->filter = $context;
+		else
+			$term['filter'] = $context;
 
 		return $term;
 	}
@@ -812,7 +866,7 @@ class WP_Taxonomy { // [WP8782]
 	 *
 	 * @package WordPress
 	 * @subpackage Taxonomy
-	 * @since 2.3
+	 * @since 2.3.0
 	 *
 	 * @param string $field Term field to sanitize
 	 * @param string $value Search for this term value
@@ -867,7 +921,7 @@ class WP_Taxonomy { // [WP8782]
 	 *
 	 * @package WordPress
 	 * @subpackage Taxonomy
-	 * @since 2.3
+	 * @since 2.3.0
 	 *
 	 * @uses wp_parse_args() Turns strings into arrays and merges defaults into an array.
 	 *
@@ -896,7 +950,7 @@ class WP_Taxonomy { // [WP8782]
 	 *
 	 * @package WordPress
 	 * @subpackage Taxonomy
-	 * @since 2.3
+	 * @since 2.3.0
 	 *
 	 * @param int $object_id The term Object Id that refers to the term
 	 * @param string|array $taxonomy List of Taxonomy Names or single Taxonomy name.
@@ -926,7 +980,7 @@ class WP_Taxonomy { // [WP8782]
 	 *
 	 * @package WordPress
 	 * @subpackage Taxonomy
-	 * @since 2.3
+	 * @since 2.3.0
 	 *
 	 * @uses do_action() Calls both 'delete_term' and 'delete_$taxonomy' action
 	 *  hooks, passing term object, term id. 'delete_term' gets an additional
@@ -1017,7 +1071,7 @@ class WP_Taxonomy { // [WP8782]
 	 *
 	 * @package WordPress
 	 * @subpackage Taxonomy
-	 * @since 2.3
+	 * @since 2.3.0
 	 *
 	 * @param int|array $object_id The id of the object(s) to retrieve.
 	 * @param string|array $taxonomies The taxonomies to retrieve terms from.
@@ -1138,7 +1192,7 @@ class WP_Taxonomy { // [WP8782]
 	 *
 	 * @package WordPress
 	 * @subpackage Taxonomy
-	 * @since 2.3
+	 * @since 2.3.0
 	 *
 	 * @uses do_action() Calls 'create_term' hook with the term id and taxonomy id as parameters.
 	 * @uses do_action() Calls 'create_$taxonomy' hook with term id and taxonomy id as parameters.
@@ -1240,7 +1294,7 @@ class WP_Taxonomy { // [WP8782]
 	 *
 	 * @package WordPress
 	 * @subpackage Taxonomy
-	 * @since 2.3
+	 * @since 2.3.0
 	 *
 	 * @param int $object_id The object to relate to.
 	 * @param array|int|string $term The slug or id of the term.
@@ -1323,7 +1377,7 @@ class WP_Taxonomy { // [WP8782]
 	 *
 	 * @package WordPress
 	 * @subpackage Taxonomy
-	 * @since 2.3
+	 * @since 2.3.0
 	 *
 	 * @param string $slug The string that will be tried for a unique slug
 	 * @param object $term The term object that the $slug will belong too
@@ -1387,7 +1441,7 @@ class WP_Taxonomy { // [WP8782]
 	 *
 	 * @package WordPress
 	 * @subpackage Taxonomy
-	 * @since 2.3
+	 * @since 2.3.0
 	 *
 	 * @uses do_action() Will call both 'edit_term' and 'edit_$taxonomy' twice.
 	 * @uses apply_filters() Will call the 'term_id_filter' filter and pass the term
@@ -1478,10 +1532,10 @@ class WP_Taxonomy { // [WP8782]
 	/**
 	 * Enable or disable term counting.
 	 *
-	 * @since 2.6
+	 * @since 2.5.0
 	 *
-	 * @param bool $defer Optional.
-	 * @return bool
+	 * @param bool $defer Optional. Enable if true, disable if false.
+	 * @return bool Whether term counting is enabled or disabled.
 	 */
 	function defer_term_counting($defer=NULL) {
 		static $_defer = false;
@@ -1507,7 +1561,7 @@ class WP_Taxonomy { // [WP8782]
 	 *
 	 * @package WordPress
 	 * @subpackage Taxonomy
-	 * @since 2.3
+	 * @since 2.3.0
 	 * @uses $this->db
 	 *
 	 * @param int|array $terms The ID of the terms
@@ -1543,9 +1597,9 @@ class WP_Taxonomy { // [WP8782]
 	/**
 	 * Perform term count update immediately.
 	 *
-	 * @since 2.6
+	 * @since 2.5.0
 	 *
-	 * @param array $terms IDs of Terms to update.
+	 * @param array $terms The term_taxonomy_id of terms to update.
 	 * @param string $taxonomy The context of the term.
 	 * @return bool Always true when complete.
 	 */
@@ -1584,7 +1638,7 @@ class WP_Taxonomy { // [WP8782]
 	 * @subpackage Taxonomy
 	 * @since 2.3
 	 *
-	 * @see get_object_taxonomies() for more on $object_type
+	 * @see $this->get_object_taxonomies() for more on $object_type
 	 * @uses do_action() Will call action hook named, 'clean_object_term_cache' after completion.
 	 *	Passes, function params in same order.
 	 *
@@ -1607,12 +1661,14 @@ class WP_Taxonomy { // [WP8782]
 	 *
 	 * @package WordPress
 	 * @subpackage Taxonomy
-	 * @since 2.3
+	 * @since 2.3.0
 	 *
 	 * @param int|array $ids Single or list of Term IDs
 	 * @param string $taxonomy Can be empty and will assume tt_ids, else will use for context.
 	 */
 	function clean_term_cache($ids, $taxonomy = '') {
+		static $cleaned = array();
+
 		if ( !is_array($ids) )
 			$ids = array($ids);
 
@@ -1634,6 +1690,9 @@ class WP_Taxonomy { // [WP8782]
 		}
 
 		foreach ( $taxonomies as $taxonomy ) {
+			if ( isset($cleaned[$taxonomy]) )
+				continue;
+			$cleaned[$taxonomy] = true;
 			wp_cache_delete('all_ids', $taxonomy);
 			wp_cache_delete('get', $taxonomy);
 			$this->delete_children_cache($taxonomy);
@@ -1649,7 +1708,7 @@ class WP_Taxonomy { // [WP8782]
 	 *
 	 * @package WordPress
 	 * @subpackage Taxonomy
-	 * @since 2.3
+	 * @since 2.3.0
 	 *
 	 * @uses wp_cache_get() Retrieves taxonomy relationship from cache
 	 *
@@ -1677,8 +1736,8 @@ class WP_Taxonomy { // [WP8782]
 	 *
 	 * @package WordPress
 	 * @subpackage Taxonomy
-	 * @since 2.3
-	 * @uses get_object_terms() Used to get terms from the database to update
+	 * @since 2.3.0
+	 * @uses $this->get_object_terms() Used to get terms from the database to update
 	 *
 	 * @param string|array $object_ids Single or list of term object ID(s)
 	 * @param string $object_type The taxonomy object type
@@ -1736,7 +1795,7 @@ class WP_Taxonomy { // [WP8782]
 	 *
 	 * @package WordPress
 	 * @subpackage Taxonomy
-	 * @since 2.3
+	 * @since 2.3.0
 	 *
 	 * @param array $terms List of Term objects to change
 	 * @param string $taxonomy Optional. Update Term to this taxonomy in cache
@@ -1761,7 +1820,7 @@ class WP_Taxonomy { // [WP8782]
 	 * @package WordPress
 	 * @subpackage Taxonomy
 	 * @access private
-	 * @since 2.3
+	 * @since 2.3.0
 	 *
 	 * @uses update_option() Stores all of the children in "$taxonomy_children"
 	 *  option. That is the name of the taxonomy, immediately followed by '_children'.
@@ -1797,7 +1856,7 @@ class WP_Taxonomy { // [WP8782]
 	 * @package WordPress
 	 * @subpackage Taxonomy
 	 * @access private
-	 * @since 2.3
+	 * @since 2.3.0
 	 *
 	 * @param int $term_id Look for this Term ID in $terms
 	 * @param array $terms List of Term IDs

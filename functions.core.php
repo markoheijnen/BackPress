@@ -1,8 +1,11 @@
 <?php
+// Last sync [WP9916]
 
 if ( !function_exists('maybe_serialize') ) :
 /**
  * Serialize data, if needed.
+ *
+ * @since 2.0.5
  *
  * @param mixed $data Data that might be serialized.
  * @return mixed A scalar data
@@ -95,6 +98,14 @@ function is_serialized_string( $data ) {
 endif;
 
 if ( !function_exists('is_email') ) :
+/**
+ * Checks to see if the text is a valid email address.
+ *
+ * @since 0.71
+ *
+ * @param string $user_email The email address to be checked.
+ * @return bool Returns true if valid, otherwise false.
+ */
 function is_email($user_email) {
 	$chars = "/^([a-z0-9+_]|\\-|\\.)+@(([a-z0-9_]|\\-)+\\.)+[a-z]{2,6}\$/i";
 	if (strpos($user_email, '@') !== false && strpos($user_email, '.') !== false) {
@@ -110,6 +121,19 @@ function is_email($user_email) {
 endif;
 
 if ( !function_exists('sanitize_title') ) :
+/**
+ * Sanitizes title or use fallback title.
+ *
+ * Specifically, HTML and PHP tags are stripped. Further actions can be added
+ * via the plugin API. If $title is empty and $fallback_title is set, the latter
+ * will be used.
+ *
+ * @since 1.0.0
+ *
+ * @param string $title The string to be sanitized.
+ * @param string $fallback_title Optional. A title to use if $title is empty.
+ * @return string The sanitized string.
+ */
 function sanitize_title($title, $fallback_title = '') {
 	$title = strip_tags($title);
 	$title = apply_filters('sanitize_title', $title);
@@ -122,6 +146,17 @@ function sanitize_title($title, $fallback_title = '') {
 endif;
 
 if ( !function_exists('sanitize_title_with_dashes') ) :
+/**
+ * Sanitizes title, replacing whitespace with dashes.
+ *
+ * Limits the output to alphanumeric characters, underscore (_) and dash (-).
+ * Whitespace becomes a dash.
+ *
+ * @since 1.2.0
+ *
+ * @param string $title The title to be sanitized.
+ * @return string The sanitized title.
+ */
 function sanitize_title_with_dashes($title) {
 	$title = strip_tags($title);
 	// Preserve escaped octets.
@@ -151,6 +186,24 @@ function sanitize_title_with_dashes($title) {
 endif;
 
 if ( !function_exists('sanitize_user') ) :
+/**
+ * Sanitize username stripping out unsafe characters.
+ *
+ * If $strict is true, only alphanumeric characters (as well as _, space, ., -,
+ * @) are returned.
+ * Removes tags, octets, entities, and if strict is enabled, will remove all
+ * non-ASCII characters. After sanitizing, it passes the username, raw username
+ * (the username in the parameter), and the strict parameter as parameters for
+ * the filter.
+ *
+ * @since 2.0.0
+ * @uses apply_filters() Calls 'sanitize_user' hook on username, raw username,
+ *		and $strict parameter.
+ *
+ * @param string $username The username to be sanitized.
+ * @param bool $strict If set limits $username to specific characters. Default false.
+ * @return string The sanitized username, after passing through filters.
+ */
 function sanitize_user( $username, $strict = false ) {
 	$raw_username = $username;
 	$username = strip_tags($username);
@@ -162,7 +215,7 @@ function sanitize_user( $username, $strict = false ) {
 	if ( $strict )
 		$username = preg_replace('|[^a-z0-9 _.\-@]|i', '', $username);
 
-	// Consolidate contiguous whitespace 
+	// Consolidate contiguous whitespace
 	$username = preg_replace('|\s+|', ' ', $username);
 
 	return apply_filters('sanitize_user', $username, $raw_username, $strict);
@@ -188,21 +241,26 @@ endif;
 
 if ( !function_exists('absint') ) :
 /**
- * Converts input to an absolute integer
- * @param mixed $maybeint data you wish to have convered to an absolute integer
- * @return int an absolute integer
- */     
-function absint( $maybeint ) {  
+ * Converts value to positive integer.
+ *
+ * @since 2.5.0
+ *
+ * @param mixed $maybeint Data you wish to have convered to an absolute integer
+ * @return int An absolute integer
+ */
+function absint( $maybeint ) {
 	return abs( intval( $maybeint ) );
 }
 endif;
 
 if ( !function_exists('like_escape') ) :
 /**
- * Escapes text for SQL LIKE special characters % and _
+ * Escapes text for SQL LIKE special characters % and _.
  *
- * @param string text the text to be escaped
- * @return string text, safe for inclusion in LIKE query
+ * @since 2.5.0
+ *
+ * @param string $text The text to be escaped.
+ * @return string text, safe for inclusion in LIKE query.
  */
 function like_escape($text) {
 	return str_replace(array("%", "_"), array("\\%", "\\_"), $text);
@@ -210,7 +268,22 @@ function like_escape($text) {
 endif;
 
 if ( !function_exists('wp_specialchars') ) :
-function wp_specialchars( $text, $quotes = 0 ) { // [WP4451]
+/**
+ * Converts a number of special characters into their HTML entities.
+ *
+ * Differs from htmlspecialchars as existing HTML entities will not be encoded.
+ * Specifically changes: & to &#038;, < to &lt; and > to &gt;.
+ *
+ * $quotes can be set to 'single' to encode ' to &#039;, 'double' to encode " to
+ * &quot;, or '1' to do both. Default is 0 where no quotes are encoded.
+ *
+ * @since 1.2.2
+ *
+ * @param string $text The text which is to be encoded.
+ * @param mixed $quotes Optional. Converts single quotes if set to 'single', double if set to 'double' or both if otherwise set. Default 0.
+ * @return string The encoded text with HTML entities.
+ */
+function wp_specialchars( $text, $quotes = 0 ) {
 	// Like htmlspecialchars except don't double-encode HTML entities
 	$text = str_replace('&&', '&#038;&', $text);
 	$text = str_replace('&&', '&#038;&', $text);
@@ -257,21 +330,55 @@ function wp_parse_args( $args, $defaults = '' ) {
 endif;
 
 if ( !function_exists('wp_parse_str') ) :
+/**
+ * Parses a string into variables to be stored in an array.
+ *
+ * Uses {@link http://www.php.net/parse_str parse_str()} and stripslashes if
+ * {@link http://www.php.net/magic_quotes magic_quotes_gpc} is on.
+ *
+ * @since 2.2.1
+ * @uses apply_filters() for the 'wp_parse_str' filter.
+ *
+ * @param string $string The string to be parsed.
+ * @param array $array Variables will be stored in this array.
+ */
 function wp_parse_str( $string, &$array ) {
 	parse_str( $string, $array );
 	if ( get_magic_quotes_gpc() )
-		$array = stripslashes_deep( $array ); // parse_str() adds slashes if magicquotes is on.  See: http://php.net/parse_str
+		$array = stripslashes_deep( $array );
 	$array = apply_filters( 'wp_parse_str', $array );
 }
 endif;
 
 if ( !function_exists('stripslashes_deep') ) :
-function stripslashes_deep($value) { // [5261]
-	return is_array($value) ? array_map('stripslashes_deep', $value) : stripslashes($value);
+/**
+ * Navigates through an array and removes slashes from the values.
+ *
+ * If an array is passed, the array_map() function causes a callback to pass the
+ * value back to the function. The slashes from this value will removed.
+ *
+ * @since 2.0.0
+ *
+ * @param array|string $value The array or string to be striped.
+ * @return array|string Stripped array (or string in the callback).
+ */
+function stripslashes_deep($value) {
+	$value = is_array($value) ? array_map('stripslashes_deep', $value) : stripslashes($value);
+	return $value;
 }
 endif;
 
 if ( !function_exists('seems_utf8') ) :
+/**
+ * Checks to see if a string is utf8 encoded.
+ *
+ * @author bmorel at ssi dot fr
+ *
+ * @since 1.2.1
+ *
+ * @param string $Str The string to be checked
+ * @return bool True if $Str fits a UTF-8 model, false otherwise.
+ */
 function seems_utf8($Str) { # by bmorel at ssi dot fr
 	$length = strlen($Str);
 	for ($i=0; $i < $length; $i++) {
@@ -292,6 +399,16 @@ function seems_utf8($Str) { # by bmorel at ssi dot fr
 endif;
 
 if ( !function_exists('remove_accents') ) :
+/**
+ * Converts all accent characters to ASCII characters.
+ *
+ * If there are no accent characters, then the string given is just returned.
+ *
+ * @since 1.2.1
+ *
+ * @param string $string Text that might have accent characters
+ * @return string Filtered string with replaced "nice" characters.
+ */
 function remove_accents($string) {
 	if ( !preg_match('/[\x80-\xff]/', $string) )
 		return $string;
@@ -424,6 +541,15 @@ function remove_accents($string) {
 endif;
 
 if ( !function_exists('utf8_uri_encode') ) :
+/**
+ * Encode the Unicode values to be used in the URI.
+ *
+ * @since 1.5.0
+ *
+ * @param string $utf8_string
+ * @param int $length Max length of the string
+ * @return string String with Unicode encoded for URI.
+ */
 function utf8_uri_encode( $utf8_string, $length = 0 ) {
 	$unicode = '';
 	$values = array();
@@ -467,18 +593,35 @@ function utf8_uri_encode( $utf8_string, $length = 0 ) {
 endif;
 
 if ( !function_exists('clean_url') ) :
+/**
+ * Checks and cleans a URL.
+ *
+ * A number of characters are removed from the URL. If the URL is for displaying
+ * (the default behaviour) amperstands are also replaced. The 'clean_url' filter
+ * is applied to the returned cleaned URL.
+ *
+ * @since 1.2.0
+ * @uses wp_kses_bad_protocol() To only permit protocols in the URL set
+ *		via $protocols or the common ones set in the function.
+ *
+ * @param string $url The URL to be cleaned.
+ * @param array $protocols Optional. An array of acceptable protocols.
+ *		Defaults to 'http', 'https', 'ftp', 'ftps', 'mailto', 'news', 'irc', 'gopher', 'nntp', 'feed', 'telnet' if not set.
+ * @param string $context Optional. How the URL will be used. Default is 'display'.
+ * @return string The cleaned $url after the 'cleaned_url' filter is applied.
+ */
 function clean_url( $url, $protocols = null, $context = 'display' ) {
 	$original_url = $url;
 
 	if ('' == $url) return $url;
-	$url = preg_replace('|[^a-z0-9-~+_.?#=!&;,/:%@$*\'()]|i', '', $url);
+	$url = preg_replace('|[^a-z0-9-~+_.?#=!&;,/:%@$*\'()\\x80-\\xff]|i', '', $url);
 	$strip = array('%0d', '%0a');
 	$url = str_replace($strip, '', $url);
 	$url = str_replace(';//', '://', $url);
 	/* If the URL doesn't appear to contain a scheme, we
 	 * presume it needs http:// appended (unless a relative
 	 * link starting with / or a php file).
-	*/
+	 */
 	if ( strpos($url, ':') === false &&
 		substr( $url, 0, 1 ) != '/' && !preg_match('/^[a-z0-9-]+?\.php/i', $url) )
 		$url = 'http://' . $url;
@@ -486,7 +629,7 @@ function clean_url( $url, $protocols = null, $context = 'display' ) {
 	// Replace ampersands and single quotes only when displaying.
 	if ( 'display' == $context ) {
 		$url = preg_replace('/&([^#])(?![a-z]{2,8};)/', '&#038;$1', $url);
-		$url = str_replace( "'", '&#039;', $url );
+		$url = str_replace( "'", '&#039;', $url ); 
 	}
 
 	if ( !is_array($protocols) )
@@ -498,6 +641,7 @@ function clean_url( $url, $protocols = null, $context = 'display' ) {
 }
 endif;
 
+if ( !function_exists('backpress_convert_object') ) :
 function backpress_convert_object( &$object, $output ) {
 	if ( is_array( $object ) ) {
 		foreach ( array_keys( $object ) as $key )
@@ -510,3 +654,20 @@ function backpress_convert_object( &$object, $output ) {
 		}
 	}
 }
+endif;
+
+if ( !function_exists('wp_clone') ) :
+/**
+ * Copy an object.
+ * 
+ * Returns a cloned copy of an object.
+ * 
+ * @since 2.7.0
+ * 
+ * @param object $object The object to clone
+ * @return object The cloned object
+ */
+function wp_clone($object) {
+	return version_compare(phpversion(), '5.0') < 0 ? $object : clone($object);
+}
+endif;

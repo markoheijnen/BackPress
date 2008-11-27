@@ -1,4 +1,6 @@
 <?php
+// Last sync [WP9916]
+
 /**
  * WordPress CRON API
  *
@@ -27,6 +29,11 @@ if (!class_exists('BP_Options'))
  * @param array $args Optional. Arguments to pass to the hook function.
  */
 function wp_schedule_single_event( $timestamp, $hook, $args = array()) {
+	// don't schedule a duplicate if there's already an identical event due in the next 10 minutes
+	$next = wp_next_scheduled($hook, $args);
+	if ( $next && $next <= $timestamp + 600 )
+		return;
+
 	$crons = _get_cron_array();
 	$key = md5(serialize($args));
 	$crons[$timestamp][$hook][$key] = array( 'schedule' => false, 'args' => $args );
@@ -159,17 +166,46 @@ function wp_next_scheduled( $hook, $args = array() ) {
  *
  * @return null Cron could not be spawned, because it is not needed to run.
  */
-function spawn_cron() {
-	$crons = _get_cron_array();
+function spawn_cron( $local_time ) {
 
+	/*
+	 * do not even start the cron if local server timer has drifted
+	 * such as due to power failure, or misconfiguration
+	 */
+	$timer_accurate = check_server_timer( $local_time );
+	if ( !$timer_accurate )
+		return;
+
+	//sanity check
+	$crons = _get_cron_array();
 	if ( !is_array($crons) )
 		return;
 
 	$keys = array_keys( $crons );
-	if ( array_shift( $keys ) > time() )
+	$timestamp =  $keys[0];
+	if ( $timestamp > $local_time )
 		return;
 
-	$cron_url = BP_Options::get('cron_uri');
+	$cron_url = BP_Options::get( 'cron_uri' );
+	/*
+	* multiple processes on multiple web servers can run this code concurrently
+	* try to make this as atomic as possible by setting doing_cron switch
+	*/
+	$flag = BP_Options::get( 'doing_cron' );
+
+	// clean up potential invalid value resulted from various system chaos
+	if ( $flag != 0 ) {
+		if ( $flag > $local_time + 10*60 || $flag < $local_time - 10*60 ) {
+			BP_Options::update( 'doing_cron', 0 );
+			$flag = 0;
+		}
+	}
+
+	//don't run if another process is currently running it
+	if ( $flag > $local_time )
+		return;
+
+	BP_Options::update( 'doing_cron', $local_time + 30 );
 
 	wp_remote_post($cron_url, array('timeout' => 0.01, 'blocking' => false));
 }
@@ -197,13 +233,14 @@ function wp_cron() {
 	if ( isset($keys[0]) && $keys[0] > time() )
 		return;
 
+	$local_time = time();
 	$schedules = wp_get_schedules();
 	foreach ( $crons as $timestamp => $cronhooks ) {
-		if ( $timestamp > time() ) break;
+		if ( $timestamp > $local_time ) break;
 		foreach ( (array) $cronhooks as $hook => $args ) {
 			if ( isset($schedules[$hook]['callback']) && !call_user_func( $schedules[$hook]['callback'] ) )
 				continue;
-			spawn_cron();
+			spawn_cron( $local_time );
 			break 2;
 		}
 	}
@@ -334,4 +371,9 @@ function _upgrade_cron_array($cron) {
 	$new_cron['version'] = 2;
 	BP_Options::update( 'cron', $new_cron );
 	return $new_cron;
+}
+
+// stub for checking server timer accuracy, using outside standard time sources
+function check_server_timer( $local_time ) {
+	return true;
 }

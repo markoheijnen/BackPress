@@ -1,4 +1,5 @@
 <?php
+// Last sync [WP9916]
 
 /**
  * WordPress Object Cache
@@ -23,7 +24,7 @@ class WP_Object_Cache {
 	 *
 	 * @var array
 	 * @access private
-	 * @since 2.0
+	 * @since 2.0.0
 	 */
 	var $cache = array ();
 
@@ -32,7 +33,7 @@ class WP_Object_Cache {
 	 *
 	 * @var array
 	 * @access private
-	 * @since 2.0
+	 * @since 2.0.0
 	 */
 	var $non_existant_objects = array ();
 
@@ -48,7 +49,7 @@ class WP_Object_Cache {
 	/**
 	 * The amount of times the cache data was already stored in the cache.
 	 *
-	 * @since 2.5
+	 * @since 2.5.0
 	 * @access private
 	 * @var int
 	 */
@@ -59,7 +60,7 @@ class WP_Object_Cache {
 	 *
 	 * @var int
 	 * @access public
-	 * @since 2.0
+	 * @since 2.0.0
 	 */
 	var $cache_misses = 0;
 
@@ -70,7 +71,7 @@ class WP_Object_Cache {
 	 * @uses WP_Object_Cache::set Sets the data after the checking the cache
 	 *		contents existance.
 	 *
-	 * @since 2.0
+	 * @since 2.0.0
 	 *
 	 * @param int|string $id What to call the contents in the cache
 	 * @param mixed $data The contents to store in the cache
@@ -95,10 +96,10 @@ class WP_Object_Cache {
 	 * to false, then nothing will happen. The $force parameter is set to false
 	 * by default.
 	 *
-	 * On success the group and the id will be added to the 
+	 * On success the group and the id will be added to the
 	 * $non_existant_objects property in the class.
 	 *
-	 * @since 2.0
+	 * @since 2.0.0
 	 *
 	 * @param int|string $id What the contents in the cache are called
 	 * @param string $group Where the cache contents are grouped
@@ -121,7 +122,7 @@ class WP_Object_Cache {
 	/**
 	 * Clears the object cache of all data
 	 *
-	 * @since 2.0
+	 * @since 2.0.0
 	 *
 	 * @return bool Always returns true
 	 */
@@ -153,7 +154,7 @@ class WP_Object_Cache {
 	 * misses will be incremented and the cache group and ID will be added to
 	 * the nonexistant objects.
 	 *
-	 * @since 2.0
+	 * @since 2.0.0
 	 *
 	 * @param int|string $id What the contents in the cache are called
 	 * @param string $group Where the cache contents are grouped
@@ -166,7 +167,10 @@ class WP_Object_Cache {
 
 		if (isset ($this->cache[$group][$id])) {
 			$this->cache_hits += 1;
-			return $this->cache[$group][$id];
+			if ( is_object($this->cache[$group][$id]) )
+				return wp_clone($this->cache[$group][$id]);
+			else
+				return $this->cache[$group][$id];
 		}
 
 		if ( isset ($this->non_existant_objects[$group][$id]) )
@@ -180,7 +184,7 @@ class WP_Object_Cache {
 	/**
 	 * Replace the contents in the cache, if contents already exist
 	 *
-	 * @since 2.0
+	 * @since 2.0.0
 	 * @see WP_Object_Cache::set()
 	 *
 	 * @param int|string $id What to call the contents in the cache
@@ -211,7 +215,7 @@ class WP_Object_Cache {
 	 * expire for each time a page is accessed and PHP finishes. The method is
 	 * more for cache plugins which use files.
 	 *
-	 * @since 2.0
+	 * @since 2.0.0
 	 *
 	 * @param int|string $id What to call the contents in the cache
 	 * @param mixed $data The contents to store in the cache
@@ -225,6 +229,9 @@ class WP_Object_Cache {
 
 		if (NULL === $data)
 			$data = '';
+
+		if ( is_object($data) )
+			$data = wp_clone($data);
 
 		$this->cache[$group][$id] = $data;
 
@@ -240,7 +247,7 @@ class WP_Object_Cache {
 	 * Gives the cache hits, and cache misses. Also prints every cached group,
 	 * key and the data.
 	 *
-	 * @since 2.0
+	 * @since 2.0.0
 	 */
 	function stats() {
 		echo "<p>";
@@ -261,7 +268,7 @@ class WP_Object_Cache {
 	/**
 	 * PHP4 constructor; Calls PHP 5 style constructor
 	 *
-	 * @since 2.0
+	 * @since 2.0.0
 	 *
 	 * @return WP_Object_Cache
 	 */

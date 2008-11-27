@@ -1,4 +1,5 @@
 <?php
+// Last sync [WP9916]
 
 
 
@@ -82,6 +83,7 @@ class WP_Pass {
 		}
 
 		$check = $wp_hasher->CheckPassword($password, $hash);
+
 		return apply_filters('check_password', $check, $password, $hash, $user_id);
 	}
 
@@ -96,6 +98,7 @@ class WP_Pass {
 		$chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
 		if ( $special_chars )
 			$chars .= '!@#$%^&*()';
+
 		$password = '';
 		for ( $i = 0; $i < $length; $i++ )
 			$password .= substr($chars, WP_Pass::rand(0, strlen($chars) - 1), 1);

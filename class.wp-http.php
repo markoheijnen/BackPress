@@ -1,4 +1,6 @@
 <?php
+// Last sync [WP9916]
+
 /**
  * Simple and uniform HTTP request API.
  *
@@ -91,25 +93,40 @@ class WP_Http {
 	 * @since 2.7
 	 * @access private
 	 *
+	 * @param array $args Request args, default us an empty array
 	 * @return object|null Null if no transports are available, HTTP transport object.
 	 */
-	function &_getTransport() {
-		static $working_transport;
+	function &_getTransport( $args = array() ) {
+		static $working_transport, $blocking_transport, $nonblocking_transport;
 
 		if ( is_null($working_transport) ) {
-			if ( true === WP_Http_ExtHttp::test() && apply_filters('use_http_extension_transport', true) )
-				$working_transport[] = new WP_Http_ExtHttp();
-			else if ( true === WP_Http_Curl::test() && apply_filters('use_curl_transport', true) )
-				$working_transport[] = new WP_Http_Curl();
-			else if ( true === WP_Http_Streams::test() && apply_filters('use_streams_transport', true) )
-				$working_transport[] = new WP_Http_Streams();
-			else if ( true === WP_Http_Fopen::test() && apply_filters('use_fopen_transport', true) )
-				$working_transport[] = new WP_Http_Fopen();
-			else if ( true === WP_Http_Fsockopen::test() && apply_filters('use_fsockopen_transport', true) )
-				$working_transport[] = new WP_Http_Fsockopen();
+			if ( true === WP_Http_ExtHttp::test() && apply_filters('use_http_extension_transport', true) ) {
+				$working_transport['exthttp'] = new WP_Http_ExtHttp();
+				$blocking_transport[] = &$working_transport['exthttp'];
+			} else if ( true === WP_Http_Curl::test() && apply_filters('use_curl_transport', true) ) {
+				$working_transport['curl'] = new WP_Http_Curl();
+				$blocking_transport[] = &$working_transport['curl'];
+			} else if ( true === WP_Http_Streams::test() && apply_filters('use_streams_transport', true) ) {
+				$working_transport['streams'] = new WP_Http_Streams();
+				$blocking_transport[] = &$working_transport['streams'];
+			} else if ( true === WP_Http_Fopen::test() && apply_filters('use_fopen_transport', true) ) {
+				$working_transport['fopen'] = new WP_Http_Fopen();
+				$blocking_transport[] = &$working_transport['fopen'];
+			} else if ( true === WP_Http_Fsockopen::test() && apply_filters('use_fsockopen_transport', true) ) {
+				$working_transport['fsockopen'] = new WP_Http_Fsockopen();
+				$blocking_transport[] = &$working_transport['fsockopen'];
+			}
+
+			foreach ( array('curl', 'streams', 'fopen', 'fsockopen', 'exthttp') as $transport ) {
+				if ( isset($working_transport[$transport]) )
+					$nonblocking_transport[] = &$working_transport[$transport];
+			}
 		}
 
-		return $working_transport;
+		if ( isset($args['blocking']) && !$args['blocking'] )
+			return $nonblocking_transport;
+		else
+			return $blocking_transport;
 	}
 
 	/**
@@ -124,21 +141,34 @@ class WP_Http {
 	 * @since 2.7
 	 * @access private
 	 *
+	 * @param array $args Request args, default us an empty array
 	 * @return object|null Null if no transports are available, HTTP transport object.
 	 */
-	function &_postTransport() {
-		static $working_transport;
+	function &_postTransport( $args = array() ) {
+		static $working_transport, $blocking_transport, $nonblocking_transport;
 
 		if ( is_null($working_transport) ) {
-			if ( true === WP_Http_ExtHttp::test() && apply_filters('use_http_extension_transport', true) )
-				$working_transport[] = new WP_Http_ExtHttp();
-			else if ( true === WP_Http_Streams::test() && apply_filters('use_streams_transport', true) )
-				$working_transport[] = new WP_Http_Streams();
-			else if ( true === WP_Http_Fsockopen::test() && apply_filters('use_fsockopen_transport', true) )
-				$working_transport[] = new WP_Http_Fsockopen();
+			if ( true === WP_Http_ExtHttp::test() && apply_filters('use_http_extension_transport', true) ) {
+				$working_transport['exthttp'] = new WP_Http_ExtHttp();
+				$blocking_transport[] = &$working_transport['exthttp'];
+			} else if ( true === WP_Http_Streams::test() && apply_filters('use_streams_transport', true) ) {
+				$working_transport['streams'] = new WP_Http_Streams();
+				$blocking_transport[] = &$working_transport['streams'];
+			} else if ( true === WP_Http_Fsockopen::test() && apply_filters('use_fsockopen_transport', true) ) {
+				$working_transport['fsockopen'] = new WP_Http_Fsockopen();
+				$blocking_transport[] = &$working_transport['fsockopen'];
+			}
+
+			foreach ( array('streams', 'fsockopen', 'exthttp') as $transport ) {
+				if ( isset($working_transport[$transport]) )
+					$nonblocking_transport[] = &$working_transport[$transport];
+			}			
 		}
 
-		return $working_transport;
+		if ( isset($args['blocking']) && !$args['blocking'] )
+			return $nonblocking_transport;
+		else
+			return $blocking_transport;
 	}
 
 	/**
@@ -192,7 +222,7 @@ class WP_Http {
 			'timeout' => apply_filters( 'http_request_timeout', 5),
 			'redirection' => apply_filters( 'http_request_redirection_count', 5),
 			'httpversion' => apply_filters( 'http_request_version', '1.0'),
-			'user-agent' => apply_filters( 'http_headers_useragent', 'WordPress/' . $wp_version ),
+			'user-agent' => apply_filters( 'http_headers_useragent', BP_Options::get('wp_http_version') ),
 			'blocking' => true,
 			'headers' => array(), 'body' => null
 		);
@@ -219,7 +249,7 @@ class WP_Http {
 		}
 
 		if ( is_null($r['body']) ) {
-			$transports = WP_Http::_getTransport();
+			$transports = WP_Http::_getTransport($r);
 		} else {
 			if ( is_array( $r['body'] ) || is_object( $r['body'] ) ) {
 				$r['body'] = http_build_query($r['body'], null, '&');
@@ -227,7 +257,10 @@ class WP_Http {
 				$r['headers']['Content-Length'] = strlen($r['body']);
 			}
 
-			$transports = WP_Http::_postTransport();
+			if ( ! isset( $r['headers']['Content-Length'] ) && ! isset( $r['headers']['content-length'] ) )
+				$r['headers']['Content-Length'] = strlen($r['body']);
+
+			$transports = WP_Http::_postTransport($r);
 		}
 
 		$response = array( 'headers' => array(), 'body' => '', 'response' => array('code', 'message') );
@@ -388,7 +421,7 @@ class WP_Http {
 				$length = hexdec( $match[1] );
 				$chunkLength = strlen( $match[0] );
 
-				$strBody = substr($body, strlen( $match[0] ), $length);
+				$strBody = substr($body, $chunkLength, $length);
 				$parsedBody .= $strBody;
 
 				$body = ltrim(str_replace(array($match[0], $strBody), '', $body), "\n");
@@ -760,6 +793,7 @@ class WP_Http_Streams {
 		stream_set_timeout($handle, $r['timeout'] );
 
 		if ( ! $r['blocking'] ) {
+			stream_set_blocking($handle, 0);
 			fclose($handle);
 			return array( 'headers' => array(), 'body' => '', 'response' => array('code', 'message') );
 		}
@@ -864,10 +898,8 @@ class WP_Http_ExtHTTP {
 			'headers' => $r['headers'],
 		);
 
-		if ( !defined('WP_DEBUG') || ( defined('WP_DEBUG') && false === WP_DEBUG ) ) //Emits warning level notices for max redirects and timeouts
-			$strResponse = @http_request($r['method'], $url, $r['body'], $options, $info);
-		else
-			$strResponse = http_request($r['method'], $url, $r['body'], $options, $info); //Emits warning level notices for max redirects and timeouts
+		// WP DIFF - No reference to WP_DEBUG
+		$strResponse = @http_request($r['method'], $url, $r['body'], $options, $info); //Emits warning level notices for max redirects and timeouts
 
 		if ( false === $strResponse || ! empty($info['error']) ) //Error may still be set, Response may return headers or partial document, and error contains a reason the request was aborted, eg, timeout expired or max-redirects reached
 			return new WP_Error('http_request_failed', $info['response_code'] . ': ' . $info['error']);
@@ -949,6 +981,10 @@ class WP_Http_Curl {
 		$handle = curl_init();
 		curl_setopt( $handle, CURLOPT_URL, $url);
 
+		if ( 'HEAD' === $r['method'] ) {
+			curl_setopt( $handle, CURLOPT_NOBODY, true );
+		}
+
 		if ( true === $r['blocking'] ) {
 			curl_setopt( $handle, CURLOPT_HEADER, true );
 			curl_setopt( $handle, CURLOPT_RETURNTRANSFER, 1 );
@@ -958,7 +994,6 @@ class WP_Http_Curl {
 			curl_setopt( $handle, CURLOPT_RETURNTRANSFER, 0 );
 		}
 
-		curl_setopt( $handle, CURLOPT_RETURNTRANSFER, 1 );
 		curl_setopt( $handle, CURLOPT_USERAGENT, $r['user-agent'] );
 		curl_setopt( $handle, CURLOPT_CONNECTTIMEOUT, 1 );
 		curl_setopt( $handle, CURLOPT_TIMEOUT, $r['timeout'] );
@@ -997,6 +1032,7 @@ class WP_Http_Curl {
 				return new WP_Error('http_request_failed', $curl_error);
 			if ( in_array( curl_getinfo( $handle, CURLINFO_HTTP_CODE ), array(301, 302) ) )
 				return new WP_Error('http_request_failed', __('Too many redirects.'));
+			
 			$theHeaders = array( 'headers' => array() );
 			$theBody = '';
 		}
