@@ -1,4 +1,5 @@
 <?php
+// Last sync [WP9916]
 
 /**
  * WordPress Error class.

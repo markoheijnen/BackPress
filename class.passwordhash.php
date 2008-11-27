@@ -1,4 +1,6 @@
 <?php
+// Last sync [WP9916]
+
 /**
  * Portable PHP password hashing framework.
  * @package phpass
@@ -50,6 +52,7 @@ class PasswordHash {
 		$this->portable_hashes = $portable_hashes;
 
 		$this->random_state = microtime() . (function_exists('getmypid') ? getmypid() : '') . uniqid(rand(), TRUE);
+
 	}
 
 	function get_random_bytes($count)

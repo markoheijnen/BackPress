@@ -1,4 +1,6 @@
 <?php
+// Last sync [WP9916]
+
 /*~ class.smtp.php
 .---------------------------------------------------------------------------.
 |  Software: PHPMailer - PHP email class                                    |
