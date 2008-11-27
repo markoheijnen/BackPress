@@ -1,5 +1,12 @@
 <?php
 
+
+
+if (!class_exists('BP_Options'))
+	die('BP_Options class has not been loaded for this application');
+
+
+
 class WP_Auth {
 	var $db; // BBPDB object
 	var $users; // WP_Users object
@@ -160,7 +167,7 @@ class WP_Auth {
 		if ( $expired < time() )
 			return false;
 
-		$key  = wp_hash($username . '|' . $expiration, $scheme);
+		$key  = call_user_func( BP_Options::get( 'hash_function_name' ), $username . '|' . $expiration, $scheme );
 		$hash = hash_hmac('md5', $username . '|' . $expiration, $key);
 	
 		if ( $hmac != $hash )
@@ -189,7 +196,7 @@ class WP_Auth {
 		if ( !$user || is_wp_error($user) )
 			return $user;
 
-		$key  = wp_hash($user->user_login . '|' . $expiration, $scheme);
+		$key  = call_user_func( BP_Options::get( 'hash_function_name' ), $user->user_login . '|' . $expiration, $scheme );
 		$hash = hash_hmac('md5', $user->user_login . '|' . $expiration, $key);
 
 		$cookie = $user->user_login . '|' . $expiration . '|' . $hash;

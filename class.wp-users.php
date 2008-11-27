@@ -166,7 +166,7 @@ class WP_Users {
 	 * algorithm.
 	 *
 	 * @since 2.5
-	 * @uses wp_hash_password() Used to encrypt the user's password before passing to the database
+	 * @uses WP_Pass::hash_password() Used to encrypt the user's password before passing to the database
 	 *
 	 * @param string $password The plaintext new user password
 	 * @param int $user_id User ID
