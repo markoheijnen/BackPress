@@ -10,8 +10,7 @@
  * @subpackage Cache
  */
 
-
-
+/** WordPress Object Cache Class */
 require_once( 'class.wp-object-cache.php' );
 
 /**

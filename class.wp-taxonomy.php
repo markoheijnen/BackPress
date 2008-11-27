@@ -1,7 +1,25 @@
 <?php
 // Last sync [WP9916]
 
+/**
+ * Taxonomy API
+ *
+ * @package WordPress
+ * @subpackage Taxonomy
+ * @since 2.3.0
+ */
+
+/**
+ * WordPress Taxonomy based off of WordPress revision 8782.
+ *
+ * @since 2.3.0
+ */
 class WP_Taxonomy {
+	/**
+	 * Stores the database.
+	 *
+	 * @var unknown_type
+	 */
 	var $db;
 	var $taxonomioes = array();
 
@@ -10,10 +28,21 @@ class WP_Taxonomy {
 		register_shutdown_function( array(&$this, '__destruct') );
 	}
 
+	/**
+	 * PHP5 constructor - Assigns the database to an attribute of the class.
+	 *
+	 * @param unknown_type $db
+	 */
 	function __construct( &$db ) {
 		$this->db =& $db;
 	}
 
+	/**
+	 * Does nothing.
+	 *
+	 * @package BackPress
+	 * @subpackage Taxonomy
+	 */
 	function __destruct() {
 	}
 

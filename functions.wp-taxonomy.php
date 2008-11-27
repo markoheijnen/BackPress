@@ -1,4 +1,11 @@
 <?php
+/**
+ * Taxonomy API
+ *
+ * @package WordPress
+ * @subpackage Taxonomy
+ * @since 2.3.0
+ */
 
 function get_object_taxonomies($object_type) {
 	global $wp_taxonomy_object;
