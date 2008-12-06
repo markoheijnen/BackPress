@@ -1,5 +1,5 @@
 <?php
-// Last sync [WP9916]
+// Last sync [WP10085]
 
 /**
  * Simple and uniform HTTP request API.
@@ -767,7 +767,7 @@ class WP_Http_Streams {
 		$arrContext = array('http' =>
 			array(
 				'method' => strtoupper($r['method']),
-				'user-agent' => $r['user-agent'],
+				'user_agent' => $r['user-agent'],
 				'max_redirects' => $r['redirection'],
 				'protocol_version' => (float) $r['httpversion'],
 				'header' => $strHeaders,
@@ -977,6 +977,10 @@ class WP_Http_Curl {
 			$r['user-agent'] = $r['headers']['user-agent'];
 			unset($r['headers']['user-agent']);
 		}
+
+		// If timeout is a float less than 1, round it up to 1.
+		if ( $r['timeout'] > 0 && $r['timeout'] < 1 )
+			$r['timeout'] = 1;
 
 		$handle = curl_init();
 		curl_setopt( $handle, CURLOPT_URL, $url);
