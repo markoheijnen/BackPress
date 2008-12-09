@@ -44,25 +44,6 @@ class WP_Scripts extends WP_Dependencies {
 
 		echo "<script type='text/javascript'>\n";
 		echo "/* <![CDATA[ */\n";
-		echo "function convertEntities(o) {\n";
-		echo "	var c = function(s) {\n";
-		echo "		if (/&[^;]+;/.test(s)) {\n";
-		echo "			var e = document.createElement('div');\n";
-		echo "			e.innerHTML = s;\n";
-		echo "			return !e.firstChild ? s : e.firstChild.nodeValue;\n";
-		echo "		}\n";
-		echo "		return s;\n";
-		echo "	}\n";
-		echo "	if ( typeof o === 'string' ) {\n";
-		echo "		return c(o);\n";
-		echo "	} else if ( typeof o === 'object' ) {\n";
-		echo "		for (var v in o) {\n";
-		echo "			if ( typeof o[v] === 'string' )\n";
-		echo "				o[v] = c(o[v]);\n";
-		echo "		}\n";
-		echo "	}\n";
-		echo "	return o;\n";
-		echo "};\n";
 		echo "\t$object_name = {\n";
 		$eol = '';
 		foreach ( $this->registered[$handle]->extra['l10n'][1] as $var => $val ) {
@@ -70,7 +51,7 @@ class WP_Scripts extends WP_Dependencies {
 			$eol = ",\n";
 		}
 		echo "\n\t}\n";
-		echo "try{convertEntities($object_name);}catch(e){};\n";
+		echo isset($after) ? "\t$after\n" : '';
 		echo "/* ]]> */\n";
 		echo "</script>\n";
 
