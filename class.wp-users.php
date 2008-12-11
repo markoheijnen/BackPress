@@ -308,6 +308,8 @@ class WP_Users {
 			if ( $metas = $this->db->get_results("SELECT $meta_field, meta_key, meta_value FROM {$this->db->$meta_table} WHERE $meta_field IN ($ids) /* WP_Users::append_meta */") ) {
 				usort( $metas, array(&$this, '_append_meta_sort') );
 				foreach ( $metas as $meta ) {
+					if ( empty( $meta->meta_key ) )
+						continue;
 					$trans[$meta->$meta_field]->{$meta->meta_key} = maybe_unserialize( $meta->meta_value );
 					if ( strpos($meta->meta_key, $this->db->prefix) === 0 )
 						$trans[$meta->$meta_field]->{substr($meta->meta_key, strlen($this->db->prefix))} = maybe_unserialize( $meta->meta_value );
@@ -325,6 +327,8 @@ class WP_Users {
 			if ( $metas = $this->db->get_results("SELECT meta_key, meta_value FROM {$this->db->$meta_table} WHERE $meta_field = '{$object->$id_field}' /* WP_Users::append_meta */") ) {
 				usort( $metas, array(&$this, '_append_meta_sort') );
 				foreach ( $metas as $meta ) {
+					if ( empty( $meta->meta_key ) )
+						continue;
 					$object->{$meta->meta_key} = maybe_unserialize( $meta->meta_value );
 					if ( strpos($meta->meta_key, $this->db->prefix) === 0 )
 						$object->{substr($meta->meta_key, strlen($this->db->prefix))} = maybe_unserialize( $meta->meta_value );
