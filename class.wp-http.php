@@ -14,13 +14,6 @@
  * @author Jacob Santos <wordpress@santosj.name>
  */
 
-
-
-if (!class_exists('BP_Options'))
-	die('BP_Options class has not been loaded for this application');
-
-
-
 /**
  * WordPress HTTP Class for managing HTTP Transports and making HTTP requests.
  *
@@ -222,7 +215,7 @@ class WP_Http {
 			'timeout' => apply_filters( 'http_request_timeout', 5),
 			'redirection' => apply_filters( 'http_request_redirection_count', 5),
 			'httpversion' => apply_filters( 'http_request_version', '1.0'),
-			'user-agent' => apply_filters( 'http_headers_useragent', BP_Options::get('wp_http_version') ),
+			'user-agent' => apply_filters( 'http_headers_useragent', backpress_get_option('wp_http_version') ),
 			'blocking' => true,
 			'headers' => array(), 'body' => null
 		);
@@ -253,7 +246,7 @@ class WP_Http {
 		} else {
 			if ( is_array( $r['body'] ) || is_object( $r['body'] ) ) {
 				$r['body'] = http_build_query($r['body'], null, '&');
-				$r['headers']['Content-Type'] = 'application/x-www-form-urlencoded; charset=' . BP_Options::get('charset');
+				$r['headers']['Content-Type'] = 'application/x-www-form-urlencoded; charset=' . backpress_get_option('charset');
 				$r['headers']['Content-Length'] = strlen($r['body']);
 			}
 
@@ -595,7 +588,7 @@ class WP_Http_Fsockopen {
 	 * @return boolean False means this class can not be used, true means it can.
 	 */
 	function test() {
-		if ( false !== ($option = BP_Options::get( 'disable_fsockopen' )) && time()-$option < 43200 ) // 12 hours
+		if ( false !== ($option = backpress_get_option( 'disable_fsockopen' )) && time()-$option < 43200 ) // 12 hours
 			return false;
 
 		if ( function_exists( 'fsockopen' ) )

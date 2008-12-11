@@ -7,13 +7,6 @@
  * @package WordPress
  */
 
-
-
-if (!class_exists('BP_Options'))
-	die('BP_Options class has not been loaded for this application');
-
-
-
 /**
  * Schedules a hook to run only once.
  *
@@ -186,17 +179,17 @@ function spawn_cron( $local_time ) {
 	if ( $timestamp > $local_time )
 		return;
 
-	$cron_url = BP_Options::get( 'cron_uri' );
+	$cron_url = backpress_get_option( 'cron_uri' );
 	/*
 	* multiple processes on multiple web servers can run this code concurrently
 	* try to make this as atomic as possible by setting doing_cron switch
 	*/
-	$flag = BP_Options::get( 'doing_cron' );
+	$flag = backpress_get_option( 'doing_cron' );
 
 	// clean up potential invalid value resulted from various system chaos
 	if ( $flag != 0 ) {
 		if ( $flag > $local_time + 10*60 || $flag < $local_time - 10*60 ) {
-			BP_Options::update( 'doing_cron', 0 );
+			backpress_update_option( 'doing_cron', 0 );
 			$flag = 0;
 		}
 	}
@@ -205,7 +198,7 @@ function spawn_cron( $local_time ) {
 	if ( $flag > $local_time )
 		return;
 
-	BP_Options::update( 'doing_cron', $local_time + 30 );
+	backpress_update_option( 'doing_cron', $local_time + 30 );
 
 	wp_remote_post($cron_url, array('timeout' => 0.01, 'blocking' => false));
 }
@@ -219,7 +212,7 @@ function spawn_cron( $local_time ) {
  */
 function wp_cron() {
 	// Prevent infinite loops caused by cron page requesting itself
-	$cron_uri = parse_url(BP_Options::get('cron_uri'));
+	$cron_uri = parse_url(backpress_get_option('cron_uri'));
 
 	if ( strpos($_SERVER['REQUEST_URI'], $cron_uri['path'] ) !== false )
 		return;
@@ -319,7 +312,7 @@ function wp_get_schedule($hook, $args = array()) {
  * @return array CRON info array.
  */
 function _get_cron_array()  {
-	$cron = BP_Options::get( 'cron' );
+	$cron = backpress_get_option( 'cron' );
 	if ( ! is_array($cron) )
 		return false;
 
@@ -341,7 +334,7 @@ function _get_cron_array()  {
  */
 function _set_cron_array($cron) {
 	$cron['version'] = 2;
-	BP_Options::update( 'cron', $cron );
+	backpress_update_option( 'cron', $cron );
 }
 
 /**
@@ -369,7 +362,7 @@ function _upgrade_cron_array($cron) {
 	}
 
 	$new_cron['version'] = 2;
-	BP_Options::update( 'cron', $new_cron );
+	backpress_update_option( 'cron', $new_cron );
 	return $new_cron;
 }
 
