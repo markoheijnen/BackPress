@@ -62,7 +62,7 @@ class WP_Auth {
 	 *
 	 * @param int $id User ID
 	 * @param string $name User's username
-	 * @return WP_User Current user User object
+	 * @return BP_User Current user User object
 	 */
 	function set_current_user( $user_id ) {
 		$user = $this->users->get_user( $user_id );
@@ -76,8 +76,8 @@ class WP_Auth {
 		if ( isset($this->current->ID) && $user_id == $this->current->ID )
 			return $this->current;
 
-		if ( class_exists( 'WP_User' ) )
-			$this->current = new WP_User( $user_id );
+		if ( class_exists( 'BP_User' ) )
+			$this->current = new BP_User( $user_id );
 		else
 			$this->current =& $user;
 

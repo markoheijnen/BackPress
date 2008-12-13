@@ -2,13 +2,13 @@
 // Last sync [WP9916]
 
 /**
- * WordPress User class.
+ * BackPress User class.
  *
  * @since 2.0.0
- * @package WordPress
+ * @package BackPress
  * @subpackage User
  */
-class WP_User {
+class BP_User {
 	/**
 	 * User data container.
 	 *
@@ -34,8 +34,8 @@ class WP_User {
 	 *
 	 * @since 2.0.0
 	 * @access public
-	 * @deprecated Use WP_User::$ID
-	 * @see WP_User::$ID
+	 * @deprecated Use BP_User::$ID
+	 * @see BP_User::$ID
 	 * @var int
 	 */
 	var $id = 0;
@@ -102,7 +102,7 @@ class WP_User {
 	 * PHP4 Constructor - Sets up the object properties.
 	 *
 	 * Retrieves the userdata and then assigns all of the data keys to direct
-	 * properties of the object. Calls {@link WP_User::_init_caps()} after
+	 * properties of the object. Calls {@link BP_User::_init_caps()} after
 	 * setting up the object's user data properties.
 	 *
 	 * @since 2.0.0
@@ -110,9 +110,9 @@ class WP_User {
 	 *
 	 * @param int|string $id User's ID or username
 	 * @param int $name Optional. User's username
-	 * @return WP_User
+	 * @return BP_User
 	 */
-	function WP_User( $id, $name = '' ) {
+	function BP_User( $id, $name = '' ) {
 		global $wp_users_object;
 
 		if ( empty( $id ) && empty( $name ) )
