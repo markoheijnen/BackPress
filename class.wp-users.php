@@ -119,7 +119,7 @@ class WP_Users {
 		$args = compact( array_keys($args) );
 		$args['plain_pass'] = $plain_pass;
 
-		do_action( __FUNCTION__, $args );
+		do_action( __METHOD__, $args );
 
 		return $args;
 	}
@@ -133,7 +133,7 @@ class WP_Users {
 		if ( is_wp_error($r) )
 			return $r;
 
-		do_action( __FUNCTION__, $r, $args );
+		do_action( __METHOD__, $r, $args );
 
 		return $r;
 	}
@@ -153,7 +153,7 @@ class WP_Users {
 		if ( is_wp_error($r) )
 			return $r;
 
-		do_action( __FUNCTION__, $r, $args );
+		do_action( __METHOD__, $r, $args );
 
 		return $r;
 	}
@@ -279,7 +279,7 @@ class WP_Users {
 		if ( !$user || is_wp_error( $user ) )
 			return $user;
 
-		do_action( 'pre_' . __FUNCTION__, $user->ID );
+		do_action( 'pre_' . __METHOD__, $user->ID );
 
 		$r = $this->db->query( $this->db->prepare( "DELETE FROM {$this->db->users} WHERE ID = %d", $user->ID ) );
 		$this->db->query( $this->db->prepare( "DELETE FROM {$this->db->usermeta} WHERE user_id = %d", $user->ID ) );
@@ -288,7 +288,7 @@ class WP_Users {
 		wp_cache_delete( $user->user_email, 'useremail' );
 		wp_cache_delete( $user->user_login, 'userlogins' );
 
-		do_action( __FUNCTION__, $user->ID );
+		do_action( __METHOD__, $user->ID );
 
 		return $r;
 	}
@@ -371,7 +371,7 @@ class WP_Users {
 			$meta_key = $this->db->prefix . 'capabilities';
 
 		$meta_tuple = compact('id', 'meta_key', 'meta_value', 'meta_table');
-		$meta_tuple = apply_filters( __FUNCTION__, $meta_tuple );
+		$meta_tuple = apply_filters( __METHOD__, $meta_tuple );
 		extract($meta_tuple, EXTR_OVERWRITE);
 
 		$_meta_value = maybe_serialize( $meta_value );
@@ -406,7 +406,7 @@ class WP_Users {
 		$meta_key = preg_replace('|[^a-z0-9_]|i', '', $meta_key);
 
 		$meta_tuple = compact('id', 'meta_key', 'meta_value', 'meta_table');
-		$meta_tuple = apply_filters( __FUNCTION__, $meta_tuple );
+		$meta_tuple = apply_filters( __METHOD__, $meta_tuple );
 		extract($meta_tuple, EXTR_OVERWRITE);
 
 		$_meta_value = is_null($meta_value) ? null : maybe_serialize( $meta_value );
