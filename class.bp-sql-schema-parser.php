@@ -248,7 +248,7 @@ class BP_SQL_Schema_Parser
 							// Can't properly deal with /*!4321 FOO `bar` */ version specific inclusion, just includes it regardless of version
 							$_part = preg_replace( '@/\*![0-9]*([^\*]*)\*/@', '$1', $_part );
 							$_part = preg_replace( '@/\*[^\*]*\*/@', '', $_part );
-							$_part = preg_replace( '@[\-\-|#].*\n@', "\n", $_part . "\n" );
+							$_part = preg_replace( '@[\-\-|#].*$@m', '', $_part );
 							$_clean_queries[] = trim( $_part ) . ';';
 						}
 					}
@@ -321,9 +321,9 @@ class BP_SQL_Schema_Parser
 
 		// Set up default elements to ignore
 		$ignore_defaults = array(
-			'tables' => array(), // Just a list of tablenames, including prefix. Does not affect INSERT and UPDATE queries.
+			'tables'  => array(), // Just a list of tablenames, including prefix. Does not affect INSERT and UPDATE queries.
 			'columns' => array(), // Arrays of column names, keyed with the table names, including prefix.
-			'indices' => array() // Arrays of index names, keyed with the table names, including prefix.
+			'indices' => array()  // Arrays of index names, keyed with the table names, including prefix.
 		);
 
 		// Add the elements to ignore that were passed to the function
