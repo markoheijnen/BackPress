@@ -26,7 +26,7 @@ class WP_Users {
 			'user_registered' => time(),
 			'display_name' => '',
 			'user_status' => 0,
-			'strict_user_login' => false
+			'strict_user_login' => true
 		);
 
 		$fields = array_keys( wp_parse_args( $args ) );
@@ -231,7 +231,7 @@ class WP_Users {
 			$user_id = $this->sanitize_nicename( $user_id );
 			$sql_field = 'user_nicename';
 		} else {
-			$user_id = $this->sanitize_user( $user_id );
+			$user_id = $this->sanitize_user( $user_id, true );
 			if ( $from_cache ) {
 				if ( 0 === $ID = wp_cache_get( $user_id, 'userlogins' ) )
 					return false;
