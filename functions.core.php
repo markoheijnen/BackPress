@@ -413,7 +413,7 @@ function wp_check_invalid_utf8( $string, $strip = false )
 		return $string;
 	}
 
-	// preg_match fails when it encounters invalid UTF8 in $str
+	// preg_match fails when it encounters invalid UTF8 in $string
 	if ( 1 === @preg_match( '@^.@us', $string ) ) {
 		return $string;
 	}
