@@ -271,34 +271,158 @@ if ( !function_exists('wp_specialchars') ) :
 /**
  * Converts a number of special characters into their HTML entities.
  *
- * Differs from htmlspecialchars as existing HTML entities will not be encoded.
  * Specifically changes: & to &#038;, < to &lt; and > to &gt;.
  *
- * $quotes can be set to 'single' to encode ' to &#039;, 'double' to encode " to
- * &quot;, or '1' to do both. Default is 0 where no quotes are encoded.
+ * $quote_style can be set to ENT_COMPAT to encode " to
+ * &quot;, or ENT_QUOTES to do both. Default is ENT_NOQUOTES where no quotes are encoded.
  *
  * @since 1.2.2
  *
- * @param string $text The text which is to be encoded.
- * @param mixed $quotes Optional. Converts single quotes if set to 'single', double if set to 'double' or both if otherwise set. Default 0.
+ * @param string $string The text which is to be encoded.
+ * @param mixed $quote_style Optional. Converts double quotes if set to ENT_COMPAT, both single and double if set to ENT_QUOTES or none if set to ENT_NOQUOTES. Also compatible with old values; converting single quotes if set to 'single', double if set to 'double' or both if otherwise set. Default is ENT_NOQUOTES.
+ * @param string $charset Optional. The character encoding of the string. Default is false.
+ * @param boolean $double_encode Optional. Whether or not to encode existing html entities. Default is false.
  * @return string The encoded text with HTML entities.
  */
-function wp_specialchars( $text, $quotes = 0 ) {
-	// Like htmlspecialchars except don't double-encode HTML entities
-	$text = str_replace('&&', '&#038;&', $text);
-	$text = str_replace('&&', '&#038;&', $text);
-	$text = preg_replace('/&(?:$|([^#])(?![a-z1-4]{1,8};))/', '&#038;$1', $text);
-	$text = str_replace('<', '&lt;', $text);
-	$text = str_replace('>', '&gt;', $text);
-	if ( 'double' === $quotes ) {
-		$text = str_replace('"', '&quot;', $text);
-	} elseif ( 'single' === $quotes ) {
-		$text = str_replace("'", '&#039;', $text);
-	} elseif ( $quotes ) {
-		$text = str_replace('"', '&quot;', $text);
-		$text = str_replace("'", '&#039;', $text);
+function wp_specialchars( $string, $quote_style = ENT_NOQUOTES, $charset = false, $double_encode = false )
+{
+	if ( 0 === strlen( $string ) ) {
+		return '';
 	}
-	return $text;
+
+	if ( !$charset ) {
+		$charset = backpress_get_option( 'charset' );
+	}
+	if ( in_array( $charset, array( 'utf8', 'utf-8', 'UTF8' ) ) ) {
+		$charset = 'UTF-8';
+	}
+
+	// Backwards compatibility
+	switch ( $quote_style ) {
+		// Handle expected values first for speed
+		case ENT_NOQUOTES:
+			$_quote_style = ENT_NOQUOTES;
+			break;
+		case ENT_COMPAT:
+			$_quote_style = ENT_COMPAT;
+			break;
+		case ENT_QUOTES:
+			$_quote_style = ENT_QUOTES;
+			break;
+		// Old values
+		case false:
+		case 0:
+		case '':
+		case null:
+		case 'single':
+			$_quote_style = ENT_NOQUOTES;
+			break;
+		case 'double':
+			$_quote_style = ENT_COMPAT;
+			break;
+		default:
+			$_quote_style = ENT_QUOTES;
+			break;
+	}
+
+	if ( version_compare( PHP_VERSION, '5.2.3', '>=' ) ) {
+		$string = htmlspecialchars( $string, $_quote_style, $charset, $double_encode );
+	} else {
+		// Handle double encoding for PHP versions that don't support it in htmlspecialchars()
+		if ( !$double_encode ) {
+			$string = htmlspecialchars_decode( $string, $_quote_style );
+			// Backwards compatibility
+			if ( 'single' === $quote_style ) {
+				$string = str_replace( '"', '&quot;', $string );
+			}
+		}
+		$string = htmlspecialchars( $string, $_quote_style, $charset );
+	}
+
+	// Backwards compatibility
+	if ( 'single' === $quote_style ) {
+		$string = str_replace( "'", '&#039;', $string );
+	}
+
+	return $string;
+}
+endif;
+
+if ( !function_exists( 'wp_entities' ) ) :
+/**
+ * Converts all special characters into their HTML entities.
+ *
+ * $quote_style can be set to ENT_COMPAT to encode " to
+ * &quot;, or ENT_QUOTES to do both. Default is ENT_NOQUOTES where no quotes are encoded.
+ *
+ * @since 2.8
+ *
+ * @param string $string The text which is to be encoded.
+ * @param mixed $quote_style Optional. Converts double quotes if set to ENT_COMPAT, both single and double if set to ENT_QUOTES or none if set to ENT_NOQUOTES. Default is ENT_NOQUOTES.
+ * @param string $charset Optional. The character encoding of the string. Default is false.
+ * @param boolean $double_encode Optional. Whether or not to encode existing html entities. Default is false.
+ * @return string The encoded text with HTML entities.
+ */
+function wp_entities( $string, $quote_style = ENT_NOQUOTES, $charset = false, $double_encode = false )
+{
+	if ( 0 === strlen( $string ) ) {
+		return '';
+	}
+
+	if ( !$charset ) {
+		$charset = backpress_get_option( 'charset' );
+	}
+	if ( in_array( $charset, array( 'utf8', 'utf-8', 'UTF8' ) ) ) {
+		$charset = 'UTF-8';
+	}
+
+	if ( version_compare( PHP_VERSION, '5.2.3', '>=' ) ) {
+		$string = htmlentities( $string, $quote_style, $charset, $double_encode );
+	} else {
+		// Handle double encoding for PHP versions that don't support it in htmlentities()
+		if ( !$double_encode ) {
+			// Multi-byte charsets are not supported below PHP 5.0.0
+			// 'cp866', 'cp1251', 'KOI8-R' charsets are not supported below PHP 4.3.2
+			$string = html_entity_decode( $string, $quote_style, $charset );
+		}
+		// 'cp866', 'cp1251', 'KOI8-R' charsets are not supported below PHP 4.3.2
+		$string = htmlentities( $string, $quote_style, $charset );
+	}
+
+	return $string;
+}
+endif;
+
+if ( !function_exists( 'wp_check_invalid_utf8' ) ) :
+/**
+ * Checks for invalid UTF8 in a string.
+ *
+ * @since 2.8
+ *
+ * @param string $string The text which is to be checked.
+ * @param boolean $strip Optional. Whether to attempt to strip out invalid UTF8. Default is false.
+ * @return string The checked text.
+ */
+function wp_check_invalid_utf8( $string, $strip = false )
+{
+	if ( 0 === strlen( $string ) ) {
+		return '';
+	}
+
+	if ( !in_array( backpress_get_option( 'charset' ), array( 'utf8', 'utf-8', 'UTF8', 'UTF-8' ) ) ) {
+		return $string;
+	}
+
+	// preg_match fails when it encounters invalid UTF8 in $str
+	if ( 1 === @preg_match( '@^.@us', $string ) ) {
+		return $string;
+	}
+
+	if ( $strip && function_exists( 'iconv' ) ) {
+		return iconv( 'utf-8', 'utf-8', $string );
+	} else {
+		return '';
+	}
 }
 endif;
 
