@@ -333,7 +333,7 @@ function wp_specialchars( $string, $quote_style = ENT_NOQUOTES, $charset = false
 			$string = htmlspecialchars_decode( $string, $_quote_style );
 			// Backwards compatibility
 			if ( 'single' === $quote_style ) {
-				$string = str_replace( '"', '&quot;', $string );
+				$string = str_replace( array( '&#039;', '&#39;' ), "'", $string );
 			}
 		}
 		$string = htmlspecialchars( $string, $_quote_style, $charset );
