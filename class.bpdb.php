@@ -647,7 +647,14 @@ class BPDB {
 		case 'collation' :
 		case 'group_concat' :
 		case 'subqueries' :
-			return version_compare($version, '4.1', '>=');
+			return version_compare( $version, '4.1', '>=' );
+			break;
+		case 'index_hint_for_join' :
+			return version_compare( $version, '5.0', '>=' );
+			break;
+		case 'index_hint_lists' :
+		case 'index_hint_for_any' :
+			return version_compare( $version, '5.1', '>=' );
 			break;
 		endswitch;
 
