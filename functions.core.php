@@ -799,7 +799,7 @@ function backpress_convert_object( &$object, $output ) {
 }
 endif;
 
-if ( !function_exists('wp_clone') ) :
+if ( !function_exists( 'wp_clone' ) ) :
 /**
  * Copy an object.
  * 
@@ -810,7 +810,11 @@ if ( !function_exists('wp_clone') ) :
  * @param object $object The object to clone
  * @return object The cloned object
  */
-function wp_clone($object) {
-	return version_compare(phpversion(), '5.0') < 0 ? $object : clone($object);
+function wp_clone( $object ) {
+	static $can_clone;
+	if ( !isset( $can_clone ) ) {
+		$can_clone = version_compare( phpversion(), '5.0', '>=' );
+	}
+	return $can_clone ? clone $object : $object;
 }
 endif;
