@@ -823,7 +823,7 @@ if ( !function_exists( 'wp_clone' ) ) :
  * 
  * Returns a cloned copy of an object.
  * 
- * @since 2.7.0
+ * @since WP 2.7.0
  * 
  * @param object $object The object to clone
  * @return object The cloned object
@@ -836,3 +836,269 @@ function wp_clone( $object ) {
 	return $can_clone ? clone( $object ) : $object;
 }
 endif;
+
+if ( !function_exists( 'get_status_header_desc' ) ) :
+/**
+ * Retrieve the description for the HTTP status.
+ *
+ * @since WP 2.3.0
+ *
+ * @param int $code HTTP status code.
+ * @return string Empty string if not found, or description if found.
+ */
+function get_status_header_desc( $code ) {
+	global $wp_header_to_desc;
+
+	$code = absint( $code );
+
+	if ( !isset( $wp_header_to_desc ) ) {
+		$wp_header_to_desc = array(
+			100 => 'Continue',
+			101 => 'Switching Protocols',
+
+			200 => 'OK',
+			201 => 'Created',
+			202 => 'Accepted',
+			203 => 'Non-Authoritative Information',
+			204 => 'No Content',
+			205 => 'Reset Content',
+			206 => 'Partial Content',
+
+			300 => 'Multiple Choices',
+			301 => 'Moved Permanently',
+			302 => 'Found',
+			303 => 'See Other',
+			304 => 'Not Modified',
+			305 => 'Use Proxy',
+			307 => 'Temporary Redirect',
+
+			400 => 'Bad Request',
+			401 => 'Unauthorized',
+			403 => 'Forbidden',
+			404 => 'Not Found',
+			405 => 'Method Not Allowed',
+			406 => 'Not Acceptable',
+			407 => 'Proxy Authentication Required',
+			408 => 'Request Timeout',
+			409 => 'Conflict',
+			410 => 'Gone',
+			411 => 'Length Required',
+			412 => 'Precondition Failed',
+			413 => 'Request Entity Too Large',
+			414 => 'Request-URI Too Long',
+			415 => 'Unsupported Media Type',
+			416 => 'Requested Range Not Satisfiable',
+			417 => 'Expectation Failed',
+
+			500 => 'Internal Server Error',
+			501 => 'Not Implemented',
+			502 => 'Bad Gateway',
+			503 => 'Service Unavailable',
+			504 => 'Gateway Timeout',
+			505 => 'HTTP Version Not Supported'
+		);
+	}
+
+	if ( isset( $wp_header_to_desc[$code] ) )
+		return $wp_header_to_desc[$code];
+	else
+		return '';
+}
+endif;
+
+if ( !function_exists( 'status_header' ) ) :
+/**
+ * Set HTTP status header.
+ *
+ * @since WP 2.0.0
+ * @uses apply_filters() Calls 'status_header' on status header string, HTTP
+ *		HTTP code, HTTP code description, and protocol string as separate
+ *		parameters.
+ *
+ * @param int $header HTTP status code
+ * @return null Does not return anything.
+ */
+function status_header( $header ) {
+	$text = get_status_header_desc( $header );
+
+	if ( empty( $text ) )
+		return false;
+
+	$protocol = $_SERVER["SERVER_PROTOCOL"];
+	if ( 'HTTP/1.1' != $protocol && 'HTTP/1.0' != $protocol )
+		$protocol = 'HTTP/1.0';
+	$status_header = "$protocol $header $text";
+	if ( function_exists( 'apply_filters' ) )
+		$status_header = apply_filters( 'status_header', $status_header, $header, $text, $protocol );
+
+	if ( version_compare( phpversion(), '4.3.0', '>=' ) )
+		return @header( $status_header, true, $header );
+	else
+		return @header( $status_header );
+}
+endif;
+
+if ( !function_exists( 'nocache_headers' ) ) :
+/**
+ * Sets the headers to prevent caching for the different browsers.
+ *
+ * Different browsers support different nocache headers, so several headers must
+ * be sent so that all of them get the point that no caching should occur.
+ *
+ * @since WP 2.0.0
+ */
+function nocache_headers() {
+	// why are these @-silenced when other header calls aren't?
+	@header( 'Expires: Wed, 11 Jan 1984 05:00:00 GMT' );
+	@header( 'Last-Modified: ' . gmdate( 'D, d M Y H:i:s' ) . ' GMT' );
+	@header( 'Cache-Control: no-cache, must-revalidate, max-age=0' );
+	@header( 'Pragma: no-cache' );
+}
+endif;
+
+/**
+ * Kill BackPress execution and display HTML message with error message.
+ *
+ * This function calls the die() PHP function. The difference is that a message
+ * in HTML will be displayed to the user. It is recommended to use this function
+ * only when the execution should not continue any further. It is not
+ * recommended to call this function very often and normally you should try to
+ * handle as many errors as possible silently.
+ *
+ * @param string $message Error message.
+ * @param string $title Error title.
+ * @param string|array $args Optional arguments to control behaviour.
+ */
+function backpress_die( $message, $title = '', $args = array() )
+{
+	$defaults = array( 'response' => 500, 'language' => 'en-US', 'text_direction' => 'ltr' );
+	$r = wp_parse_args( $args, $defaults );
+
+	if ( function_exists( 'is_wp_error' ) && is_wp_error( $message ) ) {
+		if ( empty( $title ) ) {
+			$error_data = $message->get_error_data();
+			if ( is_array( $error_data ) && isset( $error_data['title'] ) ) {
+				$title = $error_data['title'];
+			}
+		}
+		$errors = $message->get_error_messages();
+		switch ( count( $errors ) ) {
+			case 0:
+				$message = '';
+				break;
+			case 1:
+				$message = '<p>' . $errors[0] . '</p>';
+				break;
+			default:
+				$message = "<ul>\n\t\t<li>" . join( "</li>\n\t\t<li>", $errors ) . "</li>\n\t</ul>";
+				break;
+		}
+	} elseif ( is_string( $message ) ) {
+		$message = '<p>' . $message . '</p>';
+	}
+
+	if ( !headers_sent() ) {
+		status_header( $r['response'] );
+		nocache_headers();
+		header( 'Content-Type: text/html; charset=utf-8' );
+	}
+
+	if ( empty( $title ) ) {
+		if ( function_exists( '__' ) ) {
+			$title = __( 'BackPress &rsaquo; Error' );
+		} else {
+			$title = 'BackPress &rsaquo; Error';
+		}
+	}
+
+	if ( $r['text_direction'] ) {
+		$language_attributes = ' dir="' . $r['text_direction'] . '"';
+	}
+
+	if ( $r['language'] ) {
+		// Always XHTML 1.1 style
+		$language_attributes .= ' lang="' . $r['language'] . '"';
+	}
+?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN" "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"<?php echo $language_attributes; ?>>
+<head>
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+	<title><?php echo $title ?></title>
+	<style type="text/css" media="screen">
+		html { background: #f7f7f7; }
+
+		body {
+			background: #fff;
+			color: #333;
+			font-family: "Lucida Grande", Verdana, Arial, "Bitstream Vera Sans", sans-serif;
+			margin: 2em auto 0 auto;
+			width: 700px;
+			padding: 1em 2em;
+			-moz-border-radius: 11px;
+			-khtml-border-radius: 11px;
+			-webkit-border-radius: 11px;
+			border-radius: 11px;
+			border: 1px solid #dfdfdf;
+		}
+
+		a { color: #2583ad; text-decoration: none; }
+
+		a:hover { color: #d54e21; }
+
+		h1 {
+			border-bottom: 1px solid #dadada;
+			clear: both;
+			color: #666;
+			font: 24px Georgia, "Times New Roman", Times, serif;
+			margin: 5px 0 0 -4px;
+			padding: 0;
+			padding-bottom: 7px;
+		}
+
+		h2 { font-size: 16px; }
+
+		p, li {
+			padding-bottom: 2px;
+			font-size: 12px;
+			line-height: 18px;
+		}
+
+		code { font-size: 13px; }
+
+		ul, ol { padding: 5px 5px 5px 22px; }
+
+		#error-page { margin-top: 50px; }
+
+		#error-page p {
+			font-size: 12px;
+			line-height: 18px;
+			margin: 25px 0 20px;
+		}
+
+		#error-page code { font-family: Consolas, Monaco, Courier, monospace; }
+<?php
+	if ( $r['text_direction'] === 'rtl') {
+?>
+		body {
+			font-family: Tahoma, arial;
+		}
+
+		h1 {
+			font-family: arial;
+			margin: 5px -4px 0 0;
+		}
+
+		ul, ol { padding: 5px 22px 5px 5px; }
+<?php
+	}
+?>
+	</style>
+</head>
+<body id="error-page">
+	<?php echo $message; ?>
+</body>
+</html>
+<?php
+	die();
+}
