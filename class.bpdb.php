@@ -25,6 +25,8 @@ if ( !defined('BPDB__SELECT_ERROR_MESSAGE') )
 	define( 'BPDB__SELECT_ERROR_MESSAGE', 'DB Error: cannot select' );
 if ( !defined( 'BPDB__DB_VERSION_ERROR' ) )
 	define( 'BPDB__DB_VERSION_ERROR', 'DB Requires MySQL version 4.0 or higher' );
+if ( !defined( 'BPDB__PHP_EXTENSION_MISSING' ) )
+	define( 'BPDB__PHP_EXTENSION_MISSING', 'DB Requires The MySQL PHP extension' );
 
 class BPDB {
 	var $show_errors = false;
@@ -62,6 +64,12 @@ class BPDB {
 	}
 
 	function _init( $args ) {
+		if ( !extension_loaded( 'mysql' ) ) {
+			$this->show_errors();
+			$this->bail( BPDB__PHP_EXTENSION_MISSING );
+			return;
+		}
+
 		if ( 4 == func_num_args() )
 			$args = array( 'user' => $args, 'password' => func_get_arg(1), 'name' => func_get_arg(2), 'host' => func_get_arg(3) );
 
@@ -123,6 +131,7 @@ class BPDB {
 		$this->dbh = mysql_connect($host, $user, $password, true);
 
 		if ( !$this->dbh ) {
+			$this->show_errors();
 			$this->bail( BPDB__CONNECT_ERROR_MESSAGE );
 			return;
 		}
@@ -192,6 +201,7 @@ class BPDB {
 	function select( $db, &$dbh ) {
 		if ( !@mysql_select_db($db, $dbh) ) {
 			$this->ready = false;
+			$this->show_errors();
 			$this->bail( BPDB__SELECT_ERROR_MESSAGE );
 			return false;
 		}
@@ -611,7 +621,7 @@ class BPDB {
 				$this->error = $message;
 			return false;
 		}
-		wp_die($message);
+		backpress_die($message);
 	}
 
 	/**
