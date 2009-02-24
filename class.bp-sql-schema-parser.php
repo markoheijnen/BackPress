@@ -311,7 +311,7 @@ class BP_SQL_Schema_Parser
 	 */
 	function delta( $db_object, $queries, $ignore = false, $execute = true )
 	{
-		if ( !$db_object || !is_object( $db_object ) || !is_a( $db_object, 'BPDB' ) ) {
+		if ( !$db_object || !is_object( $db_object ) || !( is_a( $db_object, 'BPDB' ) || is_a( $db_object, 'BPDB_Multi' ) || is_a( $db_object, 'BPDB_Hyper' ) ) ) {
 			return __( 'Passed variable is not a BackPress database object.' );
 		}
 
