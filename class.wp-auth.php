@@ -159,15 +159,17 @@ class WP_Auth {
 		if ( $expired < time() )
 			return false;
 
-		$key  = call_user_func( backpress_get_option( 'hash_function_name' ), $username . '|' . $expiration, $scheme );
+		$user = $this->users->get_user($username);
+		if ( !$user || is_wp_error( $user ) )
+			return $user;
+
+		$pass_frag = substr($user->user_pass, 8, 4);
+
+		$key  = call_user_func( backpress_get_option( 'hash_function_name' ), $username . $pass_frag . '|' . $expiration, $scheme );
 		$hash = hash_hmac('md5', $username . '|' . $expiration, $key);
 	
 		if ( $hmac != $hash )
 			return false;
-
-		$user = $this->users->get_user($username);
-		if ( !$user || is_wp_error( $user ) )
-			return $user;
 
 		return $user->ID;
 	}
@@ -188,8 +190,10 @@ class WP_Auth {
 		if ( !$user || is_wp_error($user) )
 			return $user;
 
-		$key  = call_user_func( backpress_get_option( 'hash_function_name' ), $user->user_login . '|' . $expiration, $scheme );
-		$hash = hash_hmac('md5', $user->user_login . '|' . $expiration, $key);
+		$pass_frag = substr( $user->user_pass, 8, 4 );
+
+		$key  = call_user_func( backpress_get_option( 'hash_function_name' ), $user->user_login . $pass_frag . '|' . $expiration, $scheme );
+		$hash = hash_hmac('md5', $user->user_login . $pass_frag . '|' . $expiration, $key);
 
 		$cookie = $user->user_login . '|' . $expiration . '|' . $hash;
 
