@@ -1,5 +1,5 @@
 <?php
-// Last sync [WP9916]
+// Last sync [WP10641]
 
 /**
  * WordPress Object Cache
@@ -36,15 +36,6 @@ class WP_Object_Cache {
 	 * @since 2.0.0
 	 */
 	var $non_existant_objects = array ();
-
-	/**
-	 * Object caches that are global
-	 *
-	 * @var array
-	 * @access private
-	 * @since 2.0
-	 */
-	var $global_groups = array ('users', 'userlogins', 'usermeta');
 
 	/**
 	 * The amount of times the cache data was already stored in the cache.
@@ -137,8 +128,6 @@ class WP_Object_Cache {
 			$this->cache[$group] = array();
 		if ( isset($this->non_existant_objects[$group]) )
 			$this->non_existant_objects[$group] = array();
-
-		return true;
 	}
 
 	/**
