@@ -193,7 +193,7 @@ class WP_Auth {
 		$pass_frag = substr( $user->user_pass, 8, 4 );
 
 		$key  = call_user_func( backpress_get_option( 'hash_function_name' ), $user->user_login . $pass_frag . '|' . $expiration, $scheme );
-		$hash = hash_hmac('md5', $user->user_login . $pass_frag . '|' . $expiration, $key);
+		$hash = hash_hmac('md5', $user->user_login . '|' . $expiration, $key);
 
 		$cookie = $user->user_login . '|' . $expiration . '|' . $hash;
 
