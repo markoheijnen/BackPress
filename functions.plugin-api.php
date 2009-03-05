@@ -1,5 +1,5 @@
 <?php
-// Last sync [WP9916]
+// Last sync [WP10712]
 
 /**
  * The plugin API is located in this file, which allows for creating actions
@@ -514,8 +514,6 @@ function plugin_basename($file) {
  * @subpackage Plugin
  * @since 2.0
  *
- * @access private
- *
  * @param string $file The filename of the plugin including the path.
  * @param callback $function the function hooked to the 'activate_PLUGIN' action.
  */
@@ -540,8 +538,6 @@ function register_activation_hook($file, $function) {
  * @package WordPress
  * @subpackage Plugin
  * @since 2.0
- *
- * @access private
  *
  * @param string $file The filename of the plugin including the path.
  * @param callback $function the function hooked to the 'activate_PLUGIN' action.

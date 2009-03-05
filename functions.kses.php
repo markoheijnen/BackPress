@@ -1,5 +1,5 @@
 <?php
-// Last sync [WP9916]
+// Last sync [WP10712]
 
 /**
  * HTML/XHTML filter that only allows some elements and attributes
@@ -97,8 +97,11 @@ function wp_kses_version() {
  * @return string Content with fixed HTML tags
  */
 function wp_kses_split($string, $allowed_html, $allowed_protocols) {
-	return preg_replace('%((<!--.*?(-->|$))|(<[^>]*(>|$)|>))%e',
-	"wp_kses_split2('\\1', \$allowed_html, ".'$allowed_protocols)', $string);
+	global $pass_allowed_html, $pass_allowed_protocols;
+	$pass_allowed_html = $allowed_html;
+	$pass_allowed_protocols = $allowed_protocols;
+	return preg_replace_callback('%((<!--.*?(-->|$))|(<[^>]*(>|$)|>))%',
+		create_function('$match', 'global $pass_allowed_html, $pass_allowed_protocols; return wp_kses_split2($match[1], $pass_allowed_html, $pass_allowed_protocols);'), $string);
 }
 
 /**
@@ -300,7 +303,7 @@ function wp_kses_hair($attr, $allowed_protocols) {
 					# "value"
 					{
 					$thisval = $match[1];
-					if ( in_array($attrname, $uris) )		
+					if ( in_array($attrname, $uris) )
 						$thisval = wp_kses_bad_protocol($thisval, $allowed_protocols);
 
 					if(FALSE === array_key_exists($attrname, $attrarr)) {
@@ -316,7 +319,7 @@ function wp_kses_hair($attr, $allowed_protocols) {
 					# 'value'
 					{
 					$thisval = $match[1];
-					if ( in_array($attrname, $uris) )		
+					if ( in_array($attrname, $uris) )
 						$thisval = wp_kses_bad_protocol($thisval, $allowed_protocols);
 
 					if(FALSE === array_key_exists($attrname, $attrarr)) {
@@ -332,7 +335,7 @@ function wp_kses_hair($attr, $allowed_protocols) {
 					# value
 					{
 					$thisval = $match[1];
-					if ( in_array($attrname, $uris) )		
+					if ( in_array($attrname, $uris) )
 						$thisval = wp_kses_bad_protocol($thisval, $allowed_protocols);
 
 					if(FALSE === array_key_exists($attrname, $attrarr)) {
@@ -702,8 +705,8 @@ function valid_unicode($i) {
  * @return string Content after decoded entities
  */
 function wp_kses_decode_entities($string) {
-	$string = preg_replace('/&#([0-9]+);/e', 'chr("\\1")', $string);
-	$string = preg_replace('/&#[Xx]([0-9A-Fa-f]+);/e', 'chr(hexdec("\\1"))', $string);
+	$string = preg_replace_callback('/&#([0-9]+);/', create_function('$match', 'return chr($match[1]);'), $string);
+	$string = preg_replace_callback('/&#[Xx]([0-9A-Fa-f]+);/', create_function('$match', 'return chr(hexdec($match[1]));'), $string);
 
 	return $string;
 }

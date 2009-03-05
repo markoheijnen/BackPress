@@ -1,5 +1,5 @@
 <?php
-// Last sync [WP9916]
+// Last sync [WP10712]
 
 /*~ class.phpmailer.php
 .---------------------------------------------------------------------------.
@@ -1411,7 +1411,7 @@ class PHPMailer {
    */
   function EncodeQ ($str, $position = 'text') {
     /* There should not be any EOL in the string */
-    $encoded = preg_replace("[\r\n]", '', $str);
+    $encoded = preg_replace("/[\r\n]/", '', $str);
 
     switch (strtolower($position)) {
       case 'phrase':
