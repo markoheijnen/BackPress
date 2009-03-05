@@ -1,15 +1,14 @@
 <?php
-// Last sync [WP9916]
+// Last sync [WP10712]
 
 class WP_Pass {
 	/**
-	 * Create a hash (encrypt) of a plain text password
+	 * Create a hash (encrypt) of a plain text password.
 	 *
-	 * For integration with other applications, this function can be
-	 * overwritten to instead use the other package password checking
-	 * algorithm.
+	 * For integration with other applications, this function can be overwritten to
+	 * instead use the other package password checking algorithm.
 	 *
-	 * @since 2.5
+	 * @since WP 2.5
 	 * @global object $wp_hasher PHPass object
 	 * @uses PasswordHash::HashPassword
 	 *
@@ -29,19 +28,17 @@ class WP_Pass {
 	}
 
 	/**
-	 * Checks the plaintext password against the encrypted Password
+	 * Checks the plaintext password against the encrypted Password.
 	 *
-	 * Maintains compatibility between old version and the new cookie
-	 * authentication protocol using PHPass library. The $hash parameter
-	 * is the encrypted password and the function compares the plain text
-	 * password when encypted similarly against the already encrypted
-	 * password to see if they match.
+	 * Maintains compatibility between old version and the new cookie authentication
+	 * protocol using PHPass library. The $hash parameter is the encrypted password
+	 * and the function compares the plain text password when encypted similarly
+	 * against the already encrypted password to see if they match.
 	 *
-	 * For integration with other applications, this function can be
-	 * overwritten to instead use the other package password checking
-	 * algorithm.
+	 * For integration with other applications, this function can be overwritten to
+	 * instead use the other package password checking algorithm.
 	 *
-	 * @since 2.5
+	 * @since WP 2.5
 	 * @global object $wp_hasher PHPass object used for checking the password
 	 *	against the $hash + $password
 	 * @uses PasswordHash::CheckPassword
@@ -85,6 +82,8 @@ class WP_Pass {
 	 *
 	 * @since WP 2.5
 	 *
+	 * @param int $length The length of password to generate
+	 * @param bool $special_chars Whether to include standard special characters 
 	 * @return string The random password
 	 */
 	function generate_password($length = 12, $special_chars = true) {
@@ -101,14 +100,12 @@ class WP_Pass {
 	/**
 	 * Generates a random number
 	 *
-	 * Not verbatim WordPress, keeps seed value in a static variable instead
-	 * of storing it in the database.
+	 * Not verbatim WordPress, keeps seed value in backpress options.
 	 *
 	 * @since WP 2.6.2
 	 *
 	 * @param int $min Lower limit for the generated number (optional, default is 0)
 	 * @param int $max Upper limit for the generated number (optional, default is 4294967295)
-	 * @static string $seed The seed for the random string
 	 * @return int A random number between min and max
 	 */
 	function rand( $min = 0, $max = 0 ) {

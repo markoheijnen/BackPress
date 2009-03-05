@@ -1,5 +1,5 @@
 <?php
-// Last sync [WP9916]
+// Last sync [WP10712]
 
 /**
  * BackPress implementation for PHP functions missing from older PHP versions.
@@ -57,21 +57,24 @@ if ( !function_exists( '_http_build_query' ) ) {
 
 if ( !function_exists( '_' ) ) {
 	// Alias of gettext() - requires l10n functions
-	function _( $string ) {
+	function _( $string )
+	{
 		return $string;
 	}
 }
 
 if ( !function_exists( 'stripos' ) ) {
 	// Added in PHP 5.0.0
-	function stripos( $haystack, $needle, $offset = 0 ) {
+	function stripos( $haystack, $needle, $offset = 0 )
+	{
 		return strpos( strtolower( $haystack ), strtolower( $needle ), $offset );
 	}
 }
 
 if ( !function_exists( 'hash_hmac' ) ) {
 	// Added in PHP 5.1.2
-	function hash_hmac( $algo, $data, $key, $raw_output = false ) {
+	function hash_hmac( $algo, $data, $key, $raw_output = false )
+	{
 		$packs = array( 'md5' => 'H32', 'sha1' => 'H40' );
 
 		if ( !isset( $packs[$algo] ) ) {
@@ -93,15 +96,17 @@ if ( !function_exists( 'hash_hmac' ) ) {
 	}
 }
 
-if ( !function_exists( 'mb_strcut' ) ) {
+if ( !function_exists( 'mb_substr' ) ) {
 	// Requires multi-byte support in PHP
-	function mb_strcut( $str, $start, $length = null, $encoding = null ) {
-		return _mb_strcut( $str, $start, $length, $encoding );
+	function mb_substr( $str, $start, $length = null, $encoding = null )
+	{
+		return _mb_substr( $str, $start, $length, $encoding );
 	}
 }
 
 if ( !function_exists( '_mb_strcut' ) ) {
-	function _mb_strcut( $str, $start, $length = null, $encoding = null ) {
+	function _mb_substr( $str, $start, $length = null, $encoding = null )
+	{
 		// the solution below, works only for utf-8, so in case of a different
 		// charset, just use built-in substr
 		$charset = backpress_get_option( 'charset' );
