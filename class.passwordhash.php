@@ -1,5 +1,5 @@
 <?php
-// Last sync [WP9916]
+// Last sync [WP10712]
 
 /**
  * Portable PHP password hashing framework.
