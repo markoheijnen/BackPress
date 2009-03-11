@@ -1,5 +1,5 @@
 <?php
-// Last sync [WP10712]
+// Last sync [WP10768]
 
 /**
  * Send XML response back to AJAX request.

@@ -1,5 +1,5 @@
 <?php
-// Last sync [WP10712]
+// Last sync [WP10768]
 
 /**
  * HTML/XHTML filter that only allows some elements and attributes
