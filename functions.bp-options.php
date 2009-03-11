@@ -35,3 +35,30 @@ function backpress_delete_option( $option )
 
 	return BP_Options::delete( $option );
 }
+
+function backpress_get_transient( $transient )
+{
+	if ( !class_exists('BP_Transients') ) {
+		return;
+	}
+
+	return BP_Transients::get( $transient );
+}
+
+function backpress_set_transient( $transient, $value, $expiration = 0 )
+{
+	if ( !class_exists('BP_Transients') ) {
+		return;
+	}
+
+	return BP_Transients::set( $transient, $value, $expiration );
+}
+
+function backpress_delete_transient( $transient )
+{
+	if ( !class_exists('BP_Transients') ) {
+		return;
+	}
+
+	return BP_Transients::delete( $transient );
+}
