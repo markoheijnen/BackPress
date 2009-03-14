@@ -279,6 +279,11 @@ class WP_Users {
 			return false;
 		}
 
+		// Make sure there is a display_name set
+		if ( !$user->display_name ) {
+			$user->display_name = $user->user_login;
+		}
+
 		// append_meta does the user object, useremail, userlogins caching
 		if ($append_meta)
 			$user = $this->append_meta( $user );
