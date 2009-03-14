@@ -210,8 +210,10 @@ class WP_Users {
 				if ( $from_cache ) {
 					if ( 0 === $ID = wp_cache_get( $user_id, 'userlogins' ) )
 						return false;
-					elseif ( $ID )
+					elseif ( $ID ) {
+						$args['by'] = false;
 						return $this->get_user( $ID, $args );
+					}
 				}
 				$sql_field = 'user_login';
 				break;
