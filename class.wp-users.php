@@ -233,6 +233,7 @@ class WP_Users {
 			case 'nicename': // No cache?
 				$user_id = $this->sanitize_nicename( $user_id );
 				$sql_field = 'user_nicename';
+				break;
 
 			default:
 				if ( is_numeric( $user_id ) ) {
@@ -249,6 +250,7 @@ class WP_Users {
 				} else {
 					$user_id = false;
 				}
+				break;
 		}
 
 		if ( !$user_id )
