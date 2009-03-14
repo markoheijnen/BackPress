@@ -49,7 +49,7 @@ class WP_Users {
 
 			if ( !$user_login )
 				return new WP_Error( 'user_login', __('Invalid login name') );
-			if ( !$ID && $this->get_user( $user_login ) )
+			if ( !$ID && $this->get_user( $user_login, array( 'by' => 'login' ) ) )
 				return new WP_Error( 'user_login', __('Name already exists') );
 		}
 
@@ -204,41 +204,51 @@ class WP_Users {
 			return $users;
 		}
 
-		if ( is_numeric( $user_id ) ) {
-			$user_id = (int) $user_id;
-			if ( $from_cache ) {
-				if ( 0 === $user = wp_cache_get( $user_id, 'users' ) ) {
-					return false;
-				} elseif ( $user ) {
-					backpress_convert_object( $user, $output );
-					return $user;
+		switch ( $by ) {
+			case 'login':
+				$user_id = $this->sanitize_user( $user_id, true );
+				if ( $from_cache ) {
+					if ( 0 === $ID = wp_cache_get( $user_id, 'userlogins' ) )
+						return false;
+					elseif ( $ID )
+						return $this->get_user( $ID, $args );
 				}
-			}
-			$sql_field = 'ID';
-		} elseif ( 'email' == $by ) {
-			if ( !$this->is_email( $user_id ) )
-				return false;
-			if ( $from_cache ) {
-				if ( 0 === $ID = wp_cache_get( $user_id, 'useremail' ) )
+				$sql_field = 'user_login';
+				break;
+
+			case 'email':
+				if ( !$this->is_email( $user_id ) )
 					return false;
-				elseif ( $ID ) {
-					$args['by'] = false;
-					return $this->get_user( $ID, $args );
+				if ( $from_cache ) {
+					if ( 0 === $ID = wp_cache_get( $user_id, 'useremail' ) )
+						return false;
+					elseif ( $ID ) {
+						$args['by'] = false;
+						return $this->get_user( $ID, $args );
+					}
 				}
-			}
-			$sql_field = 'user_email';
-		} elseif ( 'nicename' == $by ) { // No cache?
-			$user_id = $this->sanitize_nicename( $user_id );
-			$sql_field = 'user_nicename';
-		} else {
-			$user_id = $this->sanitize_user( $user_id, true );
-			if ( $from_cache ) {
-				if ( 0 === $ID = wp_cache_get( $user_id, 'userlogins' ) )
-					return false;
-				elseif ( $ID )
-					return $this->get_user( $ID, $args );
-			}
-			$sql_field = 'user_login';
+				$sql_field = 'user_email';
+				break;
+
+			case 'nicename': // No cache?
+				$user_id = $this->sanitize_nicename( $user_id );
+				$sql_field = 'user_nicename';
+
+			default:
+				if ( is_numeric( $user_id ) ) {
+					$user_id = (int) $user_id;
+					if ( $from_cache ) {
+						if ( 0 === $user = wp_cache_get( $user_id, 'users' ) ) {
+							return false;
+						} elseif ( $user ) {
+							backpress_convert_object( $user, $output );
+							return $user;
+						}
+					}
+					$sql_field = 'ID';
+				} else {
+					$user_id = false;
+				}
 		}
 
 		if ( !$user_id )

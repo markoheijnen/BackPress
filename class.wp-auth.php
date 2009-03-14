@@ -159,7 +159,7 @@ class WP_Auth {
 		if ( $expired < time() )
 			return false;
 
-		$user = $this->users->get_user($username);
+		$user = $this->users->get_user( $username, array( 'by' => 'login' ) );
 		if ( !$user || is_wp_error( $user ) )
 			return $user;
 

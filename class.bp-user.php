@@ -126,7 +126,7 @@ class BP_User {
 		if ( ! empty( $id ) )
 			$this->data = $wp_users_object->get_user( $id );
 		else
-			$this->data = $wp_users_object->get_user( $name );
+			$this->data = $wp_users_object->get_user( $name, array( 'by' => 'login' ) );
 
 		if ( empty( $this->data->ID ) )
 			return;
