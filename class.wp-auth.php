@@ -163,7 +163,10 @@ class WP_Auth {
 		if ( !$user || is_wp_error( $user ) )
 			return $user;
 
-		$pass_frag = substr($user->user_pass, 8, 4);
+		$pass_frag = '';
+		if ( 1 < 'WP_AUTH_COOKIE_VERSION' ) {
+			$pass_frag = substr($user->user_pass, 8, 4);
+		}
 
 		$key  = call_user_func( backpress_get_option( 'hash_function_name' ), $username . $pass_frag . '|' . $expiration, $scheme );
 		$hash = hash_hmac('md5', $username . '|' . $expiration, $key);
@@ -190,7 +193,10 @@ class WP_Auth {
 		if ( !$user || is_wp_error($user) )
 			return $user;
 
-		$pass_frag = substr( $user->user_pass, 8, 4 );
+		$pass_frag = '';
+		if ( 1 < 'WP_AUTH_COOKIE_VERSION' ) {
+			$pass_frag = substr( $user->user_pass, 8, 4 );
+		}
 
 		$key  = call_user_func( backpress_get_option( 'hash_function_name' ), $user->user_login . $pass_frag . '|' . $expiration, $scheme );
 		$hash = hash_hmac('md5', $user->user_login . '|' . $expiration, $key);
