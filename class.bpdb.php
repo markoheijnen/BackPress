@@ -128,10 +128,12 @@ class BPDB {
 		extract( $args, EXTR_SKIP );
 
 		unset($this->dbh); // De-reference before re-assigning
-		$this->dbh = mysql_connect($host, $user, $password, true);
+		$this->dbh = @mysql_connect($host, $user, $password, true);
 
 		if ( !$this->dbh ) {
-			$this->show_errors();
+			if ( !$this->suppress_errors ) {
+				$this->show_errors();
+			}
 			$this->bail( BPDB__CONNECT_ERROR_MESSAGE );
 			return;
 		}
