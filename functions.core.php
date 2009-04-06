@@ -384,7 +384,7 @@ function wp_specialchars( $string, $quote_style = ENT_NOQUOTES, $charset = false
 		$string = preg_replace( '/&(#?x?[0-9]+|[a-z]+);/i', '|wp_entity|$1|/wp_entity|', $string );
 	}
 
-	$string = htmlspecialchars( $string, $quote_style, $charset );
+	$string = @htmlspecialchars( $string, $quote_style, $charset );
 
 	// Handle double encoding ourselves
 	if ( !$double_encode ) {
@@ -462,6 +462,22 @@ function wp_specialchars_decode( $string, $quote_style = ENT_NOQUOTES )
 
 	// Replace characters according to translation table
 	return strtr( $string, $translation );
+}
+endif;
+
+if ( !function_exists( 'attribute_escape' ) ) :
+/**
+ * Escaping for HTML attributes.
+ *
+ * @since 2.0.6
+ *
+ * @param string $text
+ * @return string
+ */
+function attribute_escape( $text ) {
+	$safe_text = wp_check_invalid_utf8( $text );
+	$safe_text = wp_specialchars( $safe_text, ENT_QUOTES );
+	return apply_filters( 'attribute_escape', $safe_text, $text );
 }
 endif;
 
