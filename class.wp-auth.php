@@ -164,7 +164,7 @@ class WP_Auth {
 			return $user;
 
 		$pass_frag = '';
-		if ( 1 < 'WP_AUTH_COOKIE_VERSION' ) {
+		if ( 1 < WP_AUTH_COOKIE_VERSION ) {
 			$pass_frag = substr($user->user_pass, 8, 4);
 		}
 
@@ -194,7 +194,7 @@ class WP_Auth {
 			return $user;
 
 		$pass_frag = '';
-		if ( 1 < 'WP_AUTH_COOKIE_VERSION' ) {
+		if ( 1 < WP_AUTH_COOKIE_VERSION ) {
 			$pass_frag = substr( $user->user_pass, 8, 4 );
 		}
 
