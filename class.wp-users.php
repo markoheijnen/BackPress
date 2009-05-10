@@ -111,8 +111,7 @@ class WP_Users {
 
 		// Cache the result
 		if ( $ID ) {
-			$this->append_meta( (object) compact( $fields ) );
-		} else {
+			wp_cache_delete( $ID, 'users' );
 			$this->get_user( $ID, array( 'from_cache' => false ) );
 		}
 
