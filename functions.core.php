@@ -1150,11 +1150,11 @@ function backpress_die( $message, $title = '', $args = array() )
 	if ( $r['text_direction'] === 'rtl') {
 ?>
 		body {
-			font-family: Tahoma, arial;
+			font-family: Tahoma, "Times New Roman";
 		}
 
 		h1 {
-			font-family: arial;
+			font-family: Tahoma, "Times New Roman";
 			margin: 5px -4px 0 0;
 		}
 
