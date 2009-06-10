@@ -1403,7 +1403,7 @@ class WP_Taxonomy {
 			$terms = array($terms);
 
 		if ( ! $append )
-			$old_tt_ids = $this->wp_get_object_terms($object_id, $taxonomy, array('fields' => 'tt_ids', 'orderby' => 'none'));
+			$old_tt_ids = $this->get_object_terms($object_id, $taxonomy, array('fields' => 'tt_ids', 'orderby' => 'none'));
 
 		$tt_ids = array();
 		$term_ids = array();
