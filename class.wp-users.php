@@ -72,7 +72,7 @@ class WP_Users {
 		}
 
 		if ( !$ID || in_array( 'user_url', $fields ) ) {
-			$user_url = clean_url( $user_url );
+			$user_url = esc_url( $user_url );
 		}
 
 		if ( !$ID || in_array( 'user_pass', $fields ) ) {
