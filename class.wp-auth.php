@@ -1,5 +1,6 @@
 <?php
-class WP_Auth {
+class WP_Auth
+{
 	var $db; // BBPDB object
 	var $users; // WP_Users object
 
@@ -7,7 +8,8 @@ class WP_Auth {
 
 	var $current = 0;
 
-	function WP_Auth( &$db, &$users, $cookies ) {
+	function WP_Auth( &$db, &$users, $cookies )
+	{
 		$this->__construct( $db, $users, $cookies );
 	}
 
@@ -31,25 +33,26 @@ class WP_Auth {
 	 *	auth: used to authorize user's actions.  Send only to domains/paths that need it (e.g. wp-admin/)
 	 *	secure_auth: used to authorize user's actions.  Send only to domains/paths that need it and only over HTTPS
 	 */
-	function __construct( &$db, &$users, $cookies ) {
+	function __construct( &$db, &$users, $cookies )
+	{
 		$this->db =& $db;
 		$this->users =& $users;
 		
 		$cookies = wp_parse_args( $cookies, array( 'auth' => null ) );
 		$_cookies = array();
-		foreach ($cookies as $_scheme => $_scheme_cookies) {
-			foreach ($_scheme_cookies as $_scheme_cookie) {
+		foreach ( $cookies as $_scheme => $_scheme_cookies ) {
+			foreach ( $_scheme_cookies as $_scheme_cookie ) {
 				$_cookies[$_scheme][] = wp_parse_args( $_scheme_cookie, array( 'domain' => null, 'path' => null, 'name' => '' ) );
 			}
-			unset($_scheme_cookie);
+			unset( $_scheme_cookie );
 		}
-		unset($_scheme, $_scheme_cookies);
+		unset( $_scheme, $_scheme_cookies );
 		$this->cookies = $_cookies;
-		unset($_cookies);
+		unset( $_cookies );
 	}
 
 	/**
-	 * set_current_user() - Changes the current user by ID or name
+	 * Changes the current user by ID or name
 	 *
 	 * Set $id to null and specify a name if you do not know a user's ID
 	 *
@@ -64,7 +67,8 @@ class WP_Auth {
 	 * @param string $name User's username
 	 * @return BP_User Current user User object
 	 */
-	function set_current_user( $user_id ) {
+	function set_current_user( $user_id )
+	{
 		$user = $this->users->get_user( $user_id );
 		if ( !$user || is_wp_error( $user ) ) {
 			$this->current = 0;
@@ -73,23 +77,25 @@ class WP_Auth {
 
 		$user_id = $user->ID;
 
-		if ( isset($this->current->ID) && $user_id == $this->current->ID )
+		if ( isset( $this->current->ID ) && $user_id == $this->current->ID ) {
 			return $this->current;
+		}
 
-		if ( class_exists( 'BP_User' ) )
+		if ( class_exists( 'BP_User' ) ) {
 			$this->current = new BP_User( $user_id );
-		else
+		} else {
 			$this->current =& $user;
+		}
 
 		// WP add_action( 'set_current_user', 'setup_userdata', 1 );
 
-		do_action('set_current_user', $user_id );
+		do_action( 'set_current_user', $user_id );
 
 		return $this->current;
 	}
 
 	/**
-	 * get_current_user() - Populate variables with information about the currently logged in user
+	 * Populate variables with information about the currently logged in user
 	 *
 	 * Will set the current user, if the current user is not set. The current
 	 * user will be set to the logged in person. If no user is logged in, then
@@ -102,22 +108,25 @@ class WP_Auth {
  	 *
  	 * @return bool|null False on XMLRPC Request and invalid auth cookie. Null when current user set
  	 */
-	function get_current_user() {
-		if ( !empty($this->current) )
+	function get_current_user()
+	{
+		if ( !empty( $this->current ) ) {
 			return $this->current;
+		}
 
-		if ( defined('XMLRPC_REQUEST') && XMLRPC_REQUEST )
+		if ( defined( 'XMLRPC_REQUEST' ) && XMLRPC_REQUEST ) {
 			$this->set_current_user( 0 );
-		elseif ( $user_id = $this->validate_auth_cookie(null, 'logged_in') )
+		} elseif ( $user_id = $this->validate_auth_cookie( null, 'logged_in' ) ) {
 			$this->set_current_user( $user_id );
-		else
+		} else {
 			$this->set_current_user( 0 );
+		}
 
 		return $this->current;
 	}
 
 	/**
-	 * validate_auth_cookie() - Validates authentication cookie
+	 * Validates authentication cookie
 	 *
 	 * The checks include making sure that the authentication cookie
 	 * is set and pulling in the contents (if $cookie is not used).
@@ -130,55 +139,68 @@ class WP_Auth {
 	 * @param string $cookie Optional. If used, will validate contents instead of cookie's
 	 * @return bool|int False if invalid cookie, User ID if valid.
 	 */
-	function validate_auth_cookie( $cookie = null, $scheme = 'auth' ) {
-		if ( empty($cookie) ) {
-			foreach ($this->cookies[$scheme] as $_scheme_cookie) {
+	function validate_auth_cookie( $cookie = null, $scheme = 'auth' )
+	{
+		if ( empty( $cookie ) ) {
+			foreach ( $this->cookies[$scheme] as $_scheme_cookie ) {
 				// Take the first cookie of type scheme that exists
-				if ( !empty($_COOKIE[$_scheme_cookie['name']]) ) {
+				if ( !empty( $_COOKIE[$_scheme_cookie['name']] ) ) {
 					$cookie = $_COOKIE[$_scheme_cookie['name']];
 					break;
 				}
 			}
 		}
 		
-		if (!$cookie)
+		if ( !$cookie ) {
 			return false;
+		}
 
-		$cookie_elements = explode('|', $cookie);
-		if ( count($cookie_elements) != 3 )
+		$cookie_elements = explode( '|', $cookie );
+		if ( count( $cookie_elements ) != 3 ) {
+			do_action( 'auth_cookie_malformed', $cookie, $scheme );
 			return false;
+		}
 
-		list($username, $expiration, $hmac) = $cookie_elements;
+		list( $username, $expiration, $hmac ) = $cookie_elements;
 
 		$expired = $expiration;
 
 		// Allow a grace period for POST and AJAX requests
-		if ( defined('DOING_AJAX') || 'POST' == $_SERVER['REQUEST_METHOD'] )
+		if ( defined( 'DOING_AJAX' ) || 'POST' == $_SERVER['REQUEST_METHOD'] ) {
 			$expired += 3600;
+		}
 
-		if ( $expired < time() )
+		if ( $expired < time() ) {
+			do_action( 'auth_cookie_expired', $cookie_elements );
 			return false;
+		}
 
 		$user = $this->users->get_user( $username, array( 'by' => 'login' ) );
-		if ( !$user || is_wp_error( $user ) )
+		if ( !$user || is_wp_error( $user ) ) {
+			do_action( 'auth_cookie_bad_username', $cookie_elements );
 			return $user;
+		}
 
 		$pass_frag = '';
 		if ( 1 < WP_AUTH_COOKIE_VERSION ) {
-			$pass_frag = substr($user->user_pass, 8, 4);
+			$pass_frag = substr( $user->user_pass, 8, 4 );
 		}
 
 		$key  = call_user_func( backpress_get_option( 'hash_function_name' ), $username . $pass_frag . '|' . $expiration, $scheme );
-		$hash = hash_hmac('md5', $username . '|' . $expiration, $key);
+		$hash = hash_hmac( 'md5', $username . '|' . $expiration, $key );
 	
-		if ( $hmac != $hash )
+		if ( $hmac != $hash ) {
+			do_action( 'auth_cookie_bad_hash', $cookie_elements );
 			return false;
+		}
+
+		do_action( 'auth_cookie_valid', $cookie_elements, $user );
 
 		return $user->ID;
 	}
 
 	/**
-	 * generate_auth_cookie() - Generate authentication cookie contents
+	 * Generate authentication cookie contents
 	 *
 	 * @since 2.5
 	 * @uses apply_filters() Calls 'auth_cookie' hook on $cookie contents, User ID
@@ -188,10 +210,12 @@ class WP_Auth {
 	 * @param int $expiration Cookie expiration in seconds
 	 * @return string Authentication cookie contents
 	 */
-	function generate_auth_cookie( $user_id, $expiration, $scheme = 'auth' ) {
+	function generate_auth_cookie( $user_id, $expiration, $scheme = 'auth' )
+	{
 		$user = $this->users->get_user( $user_id );
-		if ( !$user || is_wp_error($user) )
+		if ( !$user || is_wp_error( $user ) ) {
 			return $user;
+		}
 
 		$pass_frag = '';
 		if ( 1 < WP_AUTH_COOKIE_VERSION ) {
@@ -203,11 +227,11 @@ class WP_Auth {
 
 		$cookie = $user->user_login . '|' . $expiration . '|' . $hash;
 
-		return apply_filters('auth_cookie', $cookie, $user_id, $expiration, $scheme);
+		return apply_filters( 'auth_cookie', $cookie, $user_id, $expiration, $scheme );
 	}
 
 	/**
-	 * set_auth_cookie() - Sets the authentication cookies based User ID
+	 * Sets the authentication cookies based User ID
 	 *
 	 * The $remember parameter increases the time that the cookie will
 	 * be kept. The default the cookie is kept without remembering is
@@ -221,48 +245,54 @@ class WP_Auth {
 	 * @param int $expire the UNIX time at which the cookie expires
 	 * @param int $scheme name of the 
 	 */
-	function set_auth_cookie( $user_id, $expiration = 0, $expire = 0, $scheme = 'auth' ) {
-		if ( !isset($this->cookies[$scheme]) )
+	function set_auth_cookie( $user_id, $expiration = 0, $expire = 0, $scheme = 'auth' )
+	{
+		if ( !isset( $this->cookies[$scheme] ) ) {
 			return;
+		}
 
-		if ( !$expiration = absint( $expiration ) )
+		if ( !$expiration = absint( $expiration ) ) {
 			$expiration = time() + 172800; // 2 days
+		}
 
 		$expire = absint( $expire );
 
-		foreach ($this->cookies[$scheme] as $_cookie) {
-			$cookie = $this->generate_auth_cookie($user_id, $expiration, $scheme);
-			if ( is_wp_error( $cookie ) )
+		foreach ( $this->cookies[$scheme] as $_cookie ) {
+			$cookie = $this->generate_auth_cookie( $user_id, $expiration, $scheme );
+			if ( is_wp_error( $cookie ) ) {
 				return $cookie;
+			}
 
-			do_action('set_' . $scheme . '_cookie', $cookie, $expire, $expiration, $user_id, $scheme);
+			do_action( 'set_' . $scheme . '_cookie', $cookie, $expire, $expiration, $user_id, $scheme );
 
 			$domain = $_cookie['domain'];
 			$secure = isset($_cookie['secure']) ? (bool) $_cookie['secure'] : false;
 
 			// Set httponly if the php version is >= 5.2.0
-			if ( version_compare(phpversion(), '5.2.0', 'ge') ) {
-				setcookie($_cookie['name'], $cookie, $expire, $_cookie['path'], $domain, $secure, true);
+			if ( version_compare( phpversion(), '5.2.0', 'ge' ) ) {
+				setcookie( $_cookie['name'], $cookie, $expire, $_cookie['path'], $domain, $secure, true );
 			} else {
-				$domain = (empty($domain)) ? $domain : $domain . '; HttpOnly';
-				setcookie($_cookie['name'], $cookie, $expire, $_cookie['path'], $domain, $secure);
+				$domain = ( empty( $domain ) ) ? $domain : $domain . '; HttpOnly';
+				setcookie( $_cookie['name'], $cookie, $expire, $_cookie['path'], $domain, $secure );
 			}
 		}
-		unset($_cookie);
+		unset( $_cookie );
 	}
 
 	/**
-	 * clear_auth_cookie() - Deletes all of the cookies associated with authentication
+	 * Deletes all of the cookies associated with authentication
 	 *
 	 * @since 2.5
 	 */
-	function clear_auth_cookie() {
-		foreach ($this->cookies as $_scheme => $_scheme_cookies) {
-			foreach ($_scheme_cookies as $_cookie) {
-				setcookie($_cookie['name'], ' ', time() - 31536000, $_cookie['path'], $_cookie['domain']);
+	function clear_auth_cookie()
+	{
+		do_action( 'clear_auth_cookie' );
+		foreach ( $this->cookies as $_scheme => $_scheme_cookies ) {
+			foreach ( $_scheme_cookies as $_cookie ) {
+				setcookie( $_cookie['name'], ' ', time() - 31536000, $_cookie['path'], $_cookie['domain'] );
 			}
-			unset($_cookie);
+			unset( $_cookie );
 		}
-		unset($_scheme, $_scheme_cookies);
+		unset( $_scheme, $_scheme_cookies );
 	}
 }
