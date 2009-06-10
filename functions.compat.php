@@ -1,5 +1,5 @@
 <?php
-// Last sync [WP10712]
+// Last sync [WP11537]
 
 /**
  * BackPress implementation for PHP functions missing from older PHP versions.
