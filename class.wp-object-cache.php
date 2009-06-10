@@ -1,5 +1,5 @@
 <?php
-// Last sync [WP10768]
+// Last sync [WP11537]
 
 /**
  * WordPress Object Cache
@@ -118,6 +118,7 @@ class WP_Object_Cache {
 	 * @return bool Always returns true
 	 */
 	function flush( $group = null ) {
+		// WP does not support group flushing
 		if ( is_null($group) ) {
 			$this->cache = array();
 			$this->non_existant_objects = array();
