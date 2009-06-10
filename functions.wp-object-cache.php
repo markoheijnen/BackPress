@@ -1,5 +1,5 @@
 <?php
-// Last sync [WP10641]
+// Last sync [WP11537]
 
 /**
  * Object Cache API
@@ -75,6 +75,7 @@ function wp_cache_delete($id, $flag = '') {
  * @return bool Always returns true
  */
 function wp_cache_flush( $group = null ) {
+	// WP does not support group flushing
 	global $wp_object_cache;
 
 	return $wp_object_cache->flush( $group );
