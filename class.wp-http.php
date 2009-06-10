@@ -1,5 +1,5 @@
 <?php
-// Last sync [WP11236]
+// Last sync [WP11537]
 
 /**
  * Simple and uniform HTTP request API.
@@ -75,11 +75,11 @@ class WP_Http {
 	 * Tests all of the objects and returns the object that passes. Also caches
 	 * that object to be used later.
 	 *
-	 * The order for the GET/HEAD requests are Streams, HTTP Extension, Fopen,
-	 * and finally Fsockopen. fsockopen() is used last, because it has the most
-	 * overhead in its implementation. There isn't any real way around it, since
-	 * redirects have to be supported, much the same way the other transports
-	 * also handle redirects.
+	 * The order for the GET/HEAD requests are HTTP Extension, FSockopen Streams, 
+	 * Fopen, and finally cURL. Whilst Fsockopen has the highest overhead, Its
+	 * used 2nd due to high compatibility with most hosts, The HTTP Extension is
+	 * tested first due to hosts which have it enabled, are likely to work
+	 * correctly with it.
 	 *
 	 * There are currently issues with "localhost" not resolving correctly with
 	 * DNS. This may cause an error "failed to open stream: A connection attempt
@@ -100,18 +100,18 @@ class WP_Http {
 			if ( true === WP_Http_ExtHttp::test($args) ) {
 				$working_transport['exthttp'] = new WP_Http_ExtHttp();
 				$blocking_transport[] = &$working_transport['exthttp'];
-			} else if ( true === WP_Http_Curl::test($args) ) {
-				$working_transport['curl'] = new WP_Http_Curl();
-				$blocking_transport[] = &$working_transport['curl'];
+			} else if ( true === WP_Http_Fsockopen::test($args) ) {
+				$working_transport['fsockopen'] = new WP_Http_Fsockopen();
+				$blocking_transport[] = &$working_transport['fsockopen'];
 			} else if ( true === WP_Http_Streams::test($args) ) {
 				$working_transport['streams'] = new WP_Http_Streams();
 				$blocking_transport[] = &$working_transport['streams'];
 			} else if ( true === WP_Http_Fopen::test($args) ) {
 				$working_transport['fopen'] = new WP_Http_Fopen();
 				$blocking_transport[] = &$working_transport['fopen'];
-			} else if ( true === WP_Http_Fsockopen::test($args) ) {
-				$working_transport['fsockopen'] = new WP_Http_Fsockopen();
-				$blocking_transport[] = &$working_transport['fsockopen'];
+			} else if ( true === WP_Http_Curl::test($args) ) {
+				$working_transport['curl'] = new WP_Http_Curl();
+				$blocking_transport[] = &$working_transport['curl'];
 			}
 
 			foreach ( array('curl', 'streams', 'fopen', 'fsockopen', 'exthttp') as $transport ) {
@@ -120,7 +120,7 @@ class WP_Http {
 			}
 		}
 
-		if( has_filter('http_transport_get_debug') )
+		if ( has_filter('http_transport_get_debug') )
 			do_action('http_transport_get_debug', $working_transport, $blocking_transport, $nonblocking_transport);
 
 		if ( isset($args['blocking']) && !$args['blocking'] )
@@ -151,15 +151,15 @@ class WP_Http {
 			if ( true === WP_Http_ExtHttp::test($args) ) {
 				$working_transport['exthttp'] = new WP_Http_ExtHttp();
 				$blocking_transport[] = &$working_transport['exthttp'];
-			} else if ( true === WP_Http_Curl::test($args) ) {
-				$working_transport['curl'] = new WP_Http_Curl();
-				$blocking_transport[] = &$working_transport['curl'];
-			} else if ( true === WP_Http_Streams::test($args) ) {
-				$working_transport['streams'] = new WP_Http_Streams();
-				$blocking_transport[] = &$working_transport['streams'];
 			} else if ( true === WP_Http_Fsockopen::test($args) ) {
 				$working_transport['fsockopen'] = new WP_Http_Fsockopen();
 				$blocking_transport[] = &$working_transport['fsockopen'];
+			} else if ( true === WP_Http_Streams::test($args) ) {
+				$working_transport['streams'] = new WP_Http_Streams();
+				$blocking_transport[] = &$working_transport['streams'];
+			} else if ( true === WP_Http_Curl::test($args) ) {
+				$working_transport['curl'] = new WP_Http_Curl();
+				$blocking_transport[] = &$working_transport['curl'];
 			}
 
 			foreach ( array('curl', 'streams', 'fsockopen', 'exthttp') as $transport ) {
@@ -168,7 +168,7 @@ class WP_Http {
 			}
 		}
 
-		if( has_filter('http_transport_post_debug') )
+		if ( has_filter('http_transport_post_debug') )
 			do_action('http_transport_post_debug', $working_transport, $blocking_transport, $nonblocking_transport);
 
 		if ( isset($args['blocking']) && !$args['blocking'] )
@@ -223,7 +223,7 @@ class WP_Http {
 			'timeout' => apply_filters( 'http_request_timeout', 5),
 			'redirection' => apply_filters( 'http_request_redirection_count', 5),
 			'httpversion' => apply_filters( 'http_request_version', '1.0'),
-			'user-agent' => apply_filters( 'http_headers_useragent', backpress_get_option('wp_http_version') ),
+			'user-agent' => apply_filters( 'http_headers_useragent', backpress_get_option( 'wp_http_version' ) ),
 			'blocking' => true,
 			'headers' => array(),
 			'cookies' => array(),
@@ -245,11 +245,10 @@ class WP_Http {
 		// so that we can blacklist the transports that do not support ssl verification
 		$r['ssl'] = $arrURL['scheme'] == 'https' || $arrURL['scheme'] == 'ssl';
 
-		// Determine if this request is to OUR install
-		if ( stristr( backpress_get_option( 'application_uri' ), $arrURL['host']) )
-			$r['local'] = true;
-		else
-			$r['local'] = false;
+		// Determine if this request is to OUR install of WordPress
+		$homeURL = parse_url( backpress_get_option( 'application_uri' ) );
+		$r['local'] = $homeURL['host'] == $arrURL['host'] || 'localhost' == $arrURL['host'];
+		unset($homeURL);
 
 		if ( is_null( $r['headers'] ) )
 			$r['headers'] = array();
@@ -272,7 +271,7 @@ class WP_Http {
 		// Construct Cookie: header if any cookies are set
 		WP_Http::buildCookieHeader( $r );
 
-		if( WP_Http_Encoding::is_available() )
+		if ( WP_Http_Encoding::is_available() )
 			$r['headers']['Accept-Encoding'] = WP_Http_Encoding::accept_encoding();
 
 		if ( is_null($r['body']) ) {
@@ -282,11 +281,11 @@ class WP_Http {
 			$transports = WP_Http::_getTransport($r);
 		} else {
 			if ( is_array( $r['body'] ) || is_object( $r['body'] ) ) {
-				if ( ! version_compare(phpversion(), '5.1.2', '>=') ) 
+				if ( ! version_compare(phpversion(), '5.1.2', '>=') )
 					$r['body'] = _http_build_query($r['body'], null, '&');
 				else
 					$r['body'] = http_build_query($r['body'], null, '&');
-				$r['headers']['Content-Type'] = 'application/x-www-form-urlencoded; charset=' . get_option('blog_charset');
+				$r['headers']['Content-Type'] = 'application/x-www-form-urlencoded; charset=' . backpress_get_option( 'charset' );
 				$r['headers']['Content-Length'] = strlen($r['body']);
 			}
 
@@ -296,17 +295,17 @@ class WP_Http {
 			$transports = WP_Http::_postTransport($r);
 		}
 
-		if( has_action('http_api_debug') )
+		if ( has_action('http_api_debug') )
 			do_action('http_api_debug', $transports, 'transports_list');
 
 		$response = array( 'headers' => array(), 'body' => '', 'response' => array('code' => false, 'message' => false), 'cookies' => array() );
-		foreach( (array) $transports as $transport ) {
+		foreach ( (array) $transports as $transport ) {
 			$response = $transport->request($url, $r);
-			
-			if( has_action('http_api_debug') )
+
+			if ( has_action('http_api_debug') )
 				do_action( 'http_api_debug', $response, 'response', get_class($transport) );
 
-			if( ! is_wp_error($response) )
+			if ( ! is_wp_error($response) )
 				return $response;
 		}
 
@@ -397,8 +396,15 @@ class WP_Http {
 	 * 					Then a numbered array is returned as the value of that header-key.
 	 */
 	function processHeaders($headers) {
-		if ( is_string($headers) )
-			$headers = explode("\n", str_replace(array("\r\n", "\r"), "\n", $headers) );
+		// split headers, one per array element
+		if ( is_string($headers) ) {
+			// tolerate line terminator: CRLF = LF (RFC 2616 19.3)
+			$headers = str_replace("\r\n", "\n", $headers);
+			// unfold folded header fields. LWS = [CRLF] 1*( SP | HT ) <US-ASCII SP, space (32)>, <US-ASCII HT, horizontal-tab (9)> (RFC 2616 2.2)
+			$headers = preg_replace('/\n[ \t]/', ' ', $headers);
+			// create the headers array
+			$headers = explode("\n", $headers);
+		}
 
 		$response = array('code' => 0, 'message' => '');
 
@@ -494,7 +500,7 @@ class WP_Http {
 
 				$body = ltrim(str_replace(array($match[0], $strBody), '', $body), "\n");
 
-				if( "0" == trim($body) )
+				if ( "0" == trim($body) )
 					return $parsedBody; // Ignore footer headers.
 			} else {
 				return $body;
@@ -539,7 +545,7 @@ class WP_Http {
 			return false;
 
 		$home = parse_url( backpress_get_option( 'application_uri' ) );
-		
+
 		// Don't block requests back to ourselves by default
 		if ( $check['host'] == 'localhost' || $check['host'] == $home['host'] )
 			return apply_filters('block_local_requests', false);
@@ -735,7 +741,7 @@ class WP_Http_Fsockopen {
 	 * @static
 	 * @return boolean False means this class can not be used, true means it can.
 	 */
-	function test($args = array()) {
+	function test( $args = array() ) {
 		if ( false !== ($option = backpress_get_option( 'disable_fsockopen' )) && time()-$option < 43200 ) // 12 hours
 			return false;
 
@@ -1319,7 +1325,7 @@ class WP_Http_Curl {
 
 		if ( !empty($theResponse) ) {
 			$parts = explode("\r\n\r\n", $theResponse);
-			
+
 			$headerLength = curl_getinfo($handle, CURLINFO_HEADER_SIZE);
 			$theHeaders = trim( substr($theResponse, 0, $headerLength) );
 			$theBody = substr( $theResponse, $headerLength );
@@ -1344,7 +1350,7 @@ class WP_Http_Curl {
 
 		curl_close( $handle );
 
-		if ( true === $r['decompress'] && true === WP_Http_Encoding::should_decode($theHeaders) )
+		if ( true === $r['decompress'] && true === WP_Http_Encoding::should_decode($theHeaders['headers']) )
 			$theBody = WP_Http_Encoding::decompress( $theBody );
 
 		return array('headers' => $theHeaders['headers'], 'body' => $theBody, 'response' => $response, 'cookies' => $theHeaders['cookies']);
@@ -1430,7 +1436,7 @@ class WP_HTTP_Proxy {
 	 * @return string
 	 */
 	function host() {
-		if( defined('WP_PROXY_HOST') )
+		if ( defined('WP_PROXY_HOST') )
 			return WP_PROXY_HOST;
 
 		return '';
@@ -1519,7 +1525,7 @@ class WP_HTTP_Proxy {
 		$check = @parse_url($uri);
 
 		// Malformed URL, can not process, but this could mean ssl, so let through anyway.
-		if( $check === false )
+		if ( $check === false )
 			return true;
 
 		$home = parse_url( backpress_get_option( 'application_uri' ) );
@@ -1780,18 +1786,20 @@ class WP_Http_Encoding {
 	function decompress( $compressed, $length = null ) {
 		$decompressed = gzinflate( $compressed );
 
-		if( false !== $decompressed )
+		if ( false !== $decompressed )
 			return $decompressed;
 
 		$decompressed = gzuncompress( $compressed );
 
-		if( false !== $decompressed )
+		if ( false !== $decompressed )
 			return $decompressed;
 
-		$decompressed = gzdecode( $compressed );
+		if ( function_exists('gzdecode') ) {
+			$decompressed = gzdecode( $compressed );
 
-		if( false !== $decompressed )
-			return $decompressed;
+			if ( false !== $decompressed )
+				return $decompressed;
+		}
 
 		return $compressed;
 	}
@@ -1805,13 +1813,13 @@ class WP_Http_Encoding {
 	 */
 	function accept_encoding() {
 		$type = array();
-		if( function_exists( 'gzinflate' ) )
+		if ( function_exists( 'gzinflate' ) )
 			$type[] = 'deflate;q=1.0';
 
-		if( function_exists( 'gzuncompress' ) )
+		if ( function_exists( 'gzuncompress' ) )
 			$type[] = 'compress;q=0.5';
 
-		if( function_exists( 'gzdecode' ) )
+		if ( function_exists( 'gzdecode' ) )
 			$type[] = 'gzip;q=0.5';
 
 		return implode(', ', $type);
@@ -1837,8 +1845,8 @@ class WP_Http_Encoding {
 	 * @return bool
 	 */
 	function should_decode($headers) {
-		if( is_array( $headers ) ) {
-			if( array_key_exists('content-encoding', $headers) && ! empty( $headers['content-encoding'] ) )
+		if ( is_array( $headers ) ) {
+			if ( array_key_exists('content-encoding', $headers) && ! empty( $headers['content-encoding'] ) )
 				return true;
 		} else if( is_string( $headers ) ) {
 			return ( stripos($headers, 'content-encoding:') !== false );
