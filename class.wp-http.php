@@ -652,7 +652,7 @@ class WP_Http_Fsockopen {
 		// cause a long delay.
 		$elapseDelay = ($endDelay-$startDelay) > $r['timeout'];
 		if ( true === $elapseDelay )
-			add_option( 'disable_fsockopen', $endDelay, null, true );
+			backpress_add_option( 'disable_fsockopen', $endDelay, null, true );
 
 		if ( false === $handle )
 			return new WP_Error('http_request_failed', $iError . ': ' . $strError);
