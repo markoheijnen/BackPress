@@ -1917,7 +1917,7 @@ class WP_Taxonomy {
 	 * @access private
 	 * @since 2.3.0
 	 *
-	 * @uses update_option() Stores all of the children in "$taxonomy_children"
+	 * @uses backpress_update_option() Stores all of the children in "$taxonomy_children"
 	 *  option. That is the name of the taxonomy, immediately followed by '_children'.
 	 *
 	 * @param string $taxonomy Taxonomy Name

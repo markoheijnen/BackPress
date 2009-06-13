@@ -241,7 +241,7 @@ function wp_check_invalid_utf8( $string, $strip = false ) {
 		return '';
 	}
 
-	// Store the site charset as a static to avoid multiple calls to get_option()
+	// Store the site charset as a static to avoid multiple calls to backpress_get_option()
 	static $is_utf8;
 	if ( !isset( $is_utf8 ) ) {
 		$is_utf8 = in_array( backpress_get_option( 'charset' ), array( 'utf8', 'utf-8', 'UTF8', 'UTF-8' ) );

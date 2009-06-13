@@ -604,9 +604,9 @@ function register_uninstall_hook($file, $callback) {
 	// The option should not be autoloaded, because it is not needed in most
 	// cases. Emphasis should be put on using the 'uninstall.php' way of
 	// uninstalling the plugin.
-	$uninstallable_plugins = (array) get_option('uninstall_plugins');
+	$uninstallable_plugins = (array) backpress_get_option('uninstall_plugins');
 	$uninstallable_plugins[plugin_basename($file)] = $callback;
-	update_option('uninstall_plugins', $uninstallable_plugins);
+	backpress_update_option('uninstall_plugins', $uninstallable_plugins);
 }
 
 /**
