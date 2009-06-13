@@ -50,6 +50,15 @@ class BPDB {
 
 	var $tables = array();
 
+	/**
+	 * Whether to use mysql_real_escape_string
+	 *
+	 * @since 1.0
+	 * @access public
+	 * @var bool
+	 */
+	var $real_escape = false;
+
 	function BPDB() {
 		$args = func_get_args();
 		register_shutdown_function( array(&$this, '__destruct') );
@@ -141,15 +150,17 @@ class BPDB {
 		$this->ready = true;
 
 		if ( $this->has_cap( 'collation' ) ) {
-			$collation_query = '';
 			if ( !empty($charset) ) {
-				$collation_query = "SET NAMES '{$charset}'";
-				if (!empty($collate) )
-					$collation_query .= " COLLATE '{$collate}'";
+				if ( function_exists('mysql_set_charset') ) {
+					mysql_set_charset($charset, $this->dbh);
+					$this->real_escape = true;
+				} else {
+					$collation_query = "SET NAMES '{$charset}'";
+					if (!empty($collate) )
+						$collation_query .= " COLLATE '{$collate}'";
+					$this->query($collation_query, true);
+				}
 			}
-			
-			if ( !empty($collation_query) )
-				$this->query($collation_query, true);
 		}
 
 		return $this->select($name, $this->dbh);
@@ -210,22 +221,64 @@ class BPDB {
 		return true;
 	}
 
+	function _weak_escape($string) {
+		return addslashes($string);
+	}
+
+	function _real_escape($string) {
+		if ( $this->dbh && $this->real_escape )
+			return mysql_real_escape_string( $string, $this->dbh );
+		else
+			return addslashes( $string );
+	}
+
+	function _escape($data) {
+		if ( is_array($data) ) {
+			foreach ( (array) $data as $k => $v ) {
+				if ( is_array($v) )
+					$data[$k] = $this->_escape( $v );
+				else
+					$data[$k] = $this->_real_escape( $v );
+			}
+		} else {
+			$data = $this->_real_escape( $data );
+		}
+
+		return $data;
+	}
+
 	/**
-	 * Escapes content for insertion into the database, for security
+	 * Escapes content for insertion into the database using addslashes(), for security
 	 *
-	 * @param string $string
+	 * @since 1.0
+	 *
+	 * @param string|array $data
 	 * @return string query safe string
 	 */
-	function escape($string) {
-		return addslashes( $string );
+	function escape($data) {
+		if ( is_array($data) ) {
+			foreach ( (array) $data as $k => $v ) {
+				if ( is_array($v) )
+					$data[$k] = $this->escape( $v );
+				else
+					$data[$k] = $this->_weak_escape( $v );
+			}
+		} else {
+			$data = $this->_weak_escape( $data );
+		}
+
+		return $data;
 	}
 
 	/**
 	 * Escapes content by reference for insertion into the database, for security
+	 *
+	 * @since 1.0
+	 *
 	 * @param string $s
 	 */
-	function escape_by_ref(&$s) {
-		$s = $this->escape($s);
+	function escape_by_ref(&$string) {
+		$string = $this->_real_escape( $string );
 	}
 
 	/**
@@ -233,17 +286,40 @@ class BPDB {
 	 * @param array $array
 	 */
 	function escape_deep( $array ) {
-		return is_array($array) ? array_map(array(&$this, 'escape_deep'), $array) : $this->escape( $array );
+		return $this->_escape( $array );
 	}
 
 	/**
-	 * Prepares a SQL query for safe use, using sprintf() syntax
+	 * Prepares a SQL query for safe execution.  Uses sprintf()-like syntax.
+	 *
+	 * This function only supports a small subset of the sprintf syntax; it only supports %d (decimal number), %s (string).
+	 * Does not support sign, padding, alignment, width or precision specifiers.
+	 * Does not support argument numbering/swapping.
+	 *
+	 * May be called like {@link http://php.net/sprintf sprintf()} or like {@link http://php.net/vsprintf vsprintf()}.
+	 *
+	 * Both %d and %s should be left unquoted in the query string.
+	 *
+	 * <code>
+	 * wpdb::prepare( "SELECT * FROM `table` WHERE `column` = %s AND `field` = %d", "foo", 1337 )
+	 * </code>
+	 *
+	 * @link http://php.net/sprintf Description of syntax.
+	 * @since 1.0
+	 *
+	 * @param string $query Query statement with sprintf()-like placeholders
+	 * @param array|mixed $args The array of variables to substitute into the query's placeholders if being called like {@link http://php.net/vsprintf vsprintf()}, or the first variable to substitute into the query's placeholders if being called like {@link http://php.net/sprintf sprintf()}.
+	 * @param mixed $args,... further variables to substitute into the query's placeholders if being called like {@link http://php.net/sprintf sprintf()}.
+	 * @return null|string Sanitized query string
 	 */
-	function prepare($args=NULL) {
-		if ( NULL === $args )
+	function prepare($query = null) { // ( $query, *$args )
+		if ( is_null( $query ) )
 			return;
 		$args = func_get_args();
-		$query = array_shift($args);
+		array_shift($args);
+		// If args were passed as an array (as in vsprintf), move them up
+		if ( isset($args[0]) && is_array($args[0]) )
+			$args = $args[0];
 		$query = str_replace("'%s'", '%s', $query); // in case someone mistakenly already singlequoted it
 		$query = str_replace('"%s"', '%s', $query); // doublequote unquoting
 		$query = str_replace('%s', "'%s'", $query); // quote the strings
