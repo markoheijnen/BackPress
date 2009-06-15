@@ -513,13 +513,13 @@ class BP_Log
 
 		var bp_log_queue = new Array();
 
-		function bp_log_add(message, level) {
-			bp_log_queue.push(new Array(message, level));
+		function bp_log_add(message, level, time) {
+			bp_log_queue.push(new Array(message, level, time));
 		}
 
 		function bp_log_process() {
 			while (item = bp_log_queue.shift()) {
-				bp_log_send(item[0], item[1]);
+				bp_log_send(item[0], item[1], item[2]);
 			}
 		}
 
