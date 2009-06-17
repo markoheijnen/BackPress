@@ -269,7 +269,7 @@ class BP_Log
 					$this->console_javascript_onloads[] = array('message' => $_lines, 'level' => $level, 'time' => date('c'));
 				} else {
 					// Log it now
-					echo '<script type="text/javascript" charset="utf-8">bp_log_add(\'' . $_lines . '\', ' . $level . ', \'' . date('c') . '\');</script>' . "\n";
+					echo '<script type="text/javascript" charset="utf-8">bp_log_add(\'' . $this->_esc_js_log( $_lines ) . '\', ' . $this->_esc_js_log( $level ) . ', \'' . $this->_esc_js_log( date('c') ) . '\');</script>' . "\n";
 				}
 				break;
 		}
@@ -526,7 +526,7 @@ class BP_Log
 		function bp_log_onload() {
 <?php
 		foreach ($this->console_javascript_onloads as $onload) {
-			echo "\t\t\t" . 'bp_log_send(\'' . $onload['message'] . '\', ' . $onload['level'] . ', \'' . $onload['time'] . '\');' . "\n";
+			echo "\t\t\t" . 'bp_log_send(\'' . $this->_esc_js_log( $onload['message'] ) . '\', ' . $this->_esc_js_log( $onload['level'] ) . ', \'' . $this->_esc_js_log( $onload['time'] ) . '\');' . "\n";
 		}
 ?>
 			bp_log_process();
@@ -536,6 +536,15 @@ class BP_Log
 	</script>
 
 <?php
+	}
+
+	function _esc_js_log( $message )
+	{
+		return str_replace(
+			array( '\'', "\n" ),
+			array( '\\\'', '\n' ),
+			$message
+		);
 	}
 	
 } // END class BP_Log
