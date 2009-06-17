@@ -319,7 +319,7 @@ class WP_Users {
 		sort( $maybe_existant_user_ids );
 
 		// Get the users from the database
-		$sql = "SELECT * FROM `{$this->db->users}` WHERE `$sql_field` in ('" . join( "', '", $maybe_existant_user_ids ) . "');";
+		$sql = "SELECT * FROM `{$this->db->users}` WHERE `$sql_field` in ('" . join( "','", $maybe_existant_user_ids ) . "');";
 		$db_users = $this->db->get_results( $sql );
 
 		// Merge in the cached users if available
