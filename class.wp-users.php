@@ -186,109 +186,215 @@ class WP_Users {
 		$args = wp_parse_args( $args, $defaults );
 		extract( $args, EXTR_SKIP );
 
-		if ( is_array( $user_id ) ) {
-			$users = array();
-			// Don't append meta when fetching the basic user data
-			$args['append_meta'] = false;
-			foreach ( $user_id as $the_id ) {
-				$user = $this->get_user( $the_id, $args );
-				if ( !is_wp_error($user) )
-					$users[] = $user;
-			}
-
-			// append_meta does the user object, useremail, userlogins caching
-			$users = $this->append_meta( $users );
-
-			backpress_convert_object( $users, $output );
-			return $users;
+		if ( !$user_id ) {
+			return false;
 		}
 
+		// Let's just deal with arrays
+		$user_ids = (array) $user_id;
+
+		if ( !count( $user_ids ) ) {
+			return false;
+		}
+
+		// Validate passed ids
+		$safe_user_ids = array();
+		foreach ( $user_ids as $_user_id ) {
+			switch ( $by ) {
+				case 'login':
+					$safe_user_ids[] = $this->sanitize_user( $_user_id, true );
+					break;
+				case 'email':
+					if ( !$this->is_email( $_user_id ) ) {
+						$safe_user_ids[] = $_user_id;
+					}
+					break;
+				case 'nicename':
+					$safe_user_ids[] = $this->sanitize_nicename( $_user_id );
+					break;
+				default:
+					if ( is_numeric( $_user_id ) ) {
+						$safe_user_ids[] = (int) $_user_id;
+					}
+					break;
+			}
+		}
+
+		// No soup for you!
+		if ( !count( $safe_user_ids ) ) {
+			return false;
+		}
+
+		// Name the cache storing non-existant ids and the SQL field to query by
 		switch ( $by ) {
 			case 'login':
-				$user_id = $this->sanitize_user( $user_id, true );
-				if ( $from_cache ) {
-					if ( 0 === $ID = wp_cache_get( $user_id, 'userlogins' ) )
-						return false;
-					elseif ( $ID ) {
-						$args['by'] = false;
-						return $this->get_user( $ID, $args );
-					}
-				}
+				$non_existant_cache = 'userlogins';
 				$sql_field = 'user_login';
 				break;
-
 			case 'email':
-				if ( !$this->is_email( $user_id ) )
-					return false;
-				if ( $from_cache ) {
-					if ( 0 === $ID = wp_cache_get( $user_id, 'useremail' ) )
-						return false;
-					elseif ( $ID ) {
-						$args['by'] = false;
-						return $this->get_user( $ID, $args );
-					}
-				}
+				$non_existant_cache = 'useremail';
 				$sql_field = 'user_email';
 				break;
-
-			case 'nicename': // No cache?
-				$user_id = $this->sanitize_nicename( $user_id );
+			case 'nicename':
+				$non_existant_cache = 'usernicename';
 				$sql_field = 'user_nicename';
 				break;
-
 			default:
-				if ( is_numeric( $user_id ) ) {
-					$user_id = (int) $user_id;
-					if ( $from_cache ) {
-						if ( 0 === $user = wp_cache_get( $user_id, 'users' ) ) {
-							return false;
-						} elseif ( $user ) {
-							backpress_convert_object( $user, $output );
-							return $user;
-						}
-					}
-					$sql_field = 'ID';
-				} else {
-					$user_id = false;
-				}
+				$non_existant_cache = 'users';
+				$sql_field = 'ID';
 				break;
 		}
 
-		if ( !$user_id )
-			return false;
+		// Check if the numeric user IDs exist from caches
+		$cached_users = array();
+		if ( $from_cache ) {
+			$existant_user_ids = array();
+			$maybe_existant_user_ids = array();
 
-		$sql = "SELECT * FROM {$this->db->users} WHERE $sql_field = %s"; // ID is already (int)ed
-		$user = $this->db->get_row( $this->db->prepare( $sql, $user_id ) );
+			switch ( $by ) {
+				case 'login':
+				case 'email':
+				case 'nicename':
+					foreach ( $safe_user_ids as $_safe_user_id ) {
+						$ID = wp_cache_get( $_safe_user_id, $non_existant_cache );
+						if ( false === $ID ) {
+							$maybe_existant_user_ids[] = $_safe_user_id;
+						} elseif ( 0 !== $ID ) {
+							$existant_user_ids[] = $ID;
+						}
+					}
+					if ( count( $existant_user_ids ) ) {
+						// We need to run again using numeric ids
+						$args['by'] = false;
+						$cached_users = $this->get_user( $existant_user_ids, $args );
+					}
+					break;
+				default:
+					foreach ( $safe_user_ids as $_safe_user_id ) {
+						$user = wp_cache_get( $_safe_user_id, 'users' );
+						if ( false === $user ) {
+							$maybe_existant_user_ids[] = $_safe_user_id;
+						} elseif ( 0 !== $user ) {
+							$cached_users[] = $user;
+						}
+					}
+					break;
+			}
 
-		if ( 1 < $this->db->num_rows ) {
-			if ( 'user_email' == $sql_field )
-				$err = __( 'Multiple email matches.  Log in with your username.' );
-			else
-				$err = sprintf( __( 'Multiple %s matches' ), $sql_field );
-			return new WP_Error( $sql_field, $err, $args + array( 'user_id' => $user_id, 'unique' => false ) );
+			// No maybes? Then it's definite.
+			if ( !count( $maybe_existant_user_ids ) ) {
+				if ( !count( $cached_users ) ) {
+					// Nothing there sorry
+					return false;
+				}
+
+				// Deal with the case where one record was requested but multiple records are returned
+				if ( !is_array( $user_id ) && $user_id ) {
+					if ( 1 < count( $cached_users ) ) {
+						if ( 'user_email' == $sql_field ) {
+							$err = __( 'Multiple email matches.  Log in with your username.' );
+						} else {
+							$err = sprintf( __( 'Multiple %s matches' ), $sql_field );
+						}
+						return new WP_Error( $sql_field, $err, $args + array( 'user_id' => $user_id, 'unique' => false ) );
+					}
+
+					// If one item was requested, it expects a single user object back
+					$cached_users = array_shift( $cached_users );
+				}
+
+				backpress_convert_object( $cached_users, $output );
+				return $cached_users;
+			}
+
+			// If we get this far, there are some maybes so try and grab them
+		} else {
+			$maybe_existant_user_ids = $safe_user_ids;
 		}
 
-		if ( !$user ) { // Cache non-existant users.
-			if ( is_numeric( $user_id ) )
-				wp_cache_add($user_id, 0, 'users');
-			elseif ( 'email' == $by )
-				wp_cache_add($user_id, 0, 'useremail');
-			else
-				wp_cache_add($user_id, 0, 'userlogins');
-			return false;
+		// Escape the ids for the SQL query
+		$maybe_existant_user_ids = $this->db->escape_deep( $maybe_existant_user_ids );
+
+		// Sort the ids so the MySQL will more consistently cache the query
+		sort( $maybe_existant_user_ids );
+
+		// Get the users from the database
+		$sql = "SELECT * FROM `{$this->db->users}` WHERE `$sql_field` in ('" . join( "', '", $maybe_existant_user_ids ) . "');";
+		$db_users = $this->db->get_results( $sql );
+
+		// Merge in the cached users if available
+		if ( count( $cached_users ) ) {
+			// Create a convenient array of database fetched user ids
+			$db_user_ids = array();
+			foreach ( $db_users as $_db_user ) {
+				$db_user_ids[] = $_db_user->ID;
+			}
+			$users = array_merge( $cached_users, $db_users );
+		} else {
+			$users = $db_users;
 		}
 
-		// Make sure there is a display_name set
-		if ( !$user->display_name ) {
-			$user->display_name = $user->user_login;
+		// Deal with the case where one record was requested but multiple records are returned
+		if ( !is_array( $user_id ) && $user_id ) {
+			if ( 1 < count( $users ) ) {
+				if ( 'user_email' == $sql_field ) {
+					$err = __( 'Multiple email matches.  Log in with your username.' );
+				} else {
+					$err = sprintf( __( 'Multiple %s matches' ), $sql_field );
+				}
+				return new WP_Error( $sql_field, $err, $args + array( 'user_id' => $user_id, 'unique' => false ) );
+			}
 		}
 
-		// append_meta does the user object, useremail, userlogins caching
-		if ($append_meta)
-			$user = $this->append_meta( $user );
+		// Create a convenient array of final user ids
+		$final_user_ids = array();
+		foreach ( $users as $_user ) {
+			$final_user_ids[] = $_user->$sql_field;
+		}
 
-		backpress_convert_object( $user, $output );
-		return $user;
+		foreach ( $safe_user_ids as $_safe_user_id ) {
+			if ( !in_array( $_safe_user_id, $final_user_ids ) ) {
+				wp_cache_add( $_safe_user_id, 0, $non_existant_cache );
+			}
+		}
+
+		// Add display names
+		$final_users = array();
+		foreach ( $users as $_user ) {
+			// Make sure there is a display_name set
+			if ( !$_user->display_name ) {
+				$_user->display_name = $_user->user_login;
+			}
+
+			$final_users[] = $_user;
+		}
+
+		// append_meta() does the user object, useremail, userlogins caching
+		if ( $append_meta ) {
+			if ( count( $cached_users ) ) {
+				$db_final_users =array();
+				$cached_final_users = array();
+				foreach ( $final_users as $final_user ) {
+					if ( in_array( $final_user->ID, $db_user_ids ) ) {
+						$db_final_users[] = $final_user;
+					} else {
+						$cached_final_users[] = $final_user;
+					}
+				}
+				$db_final_users = $this->append_meta( $db_final_users );
+				$final_users = array_merge( $cached_final_users, $db_final_users );
+			} else {
+				$final_users = $this->append_meta( $final_users );
+			}
+		}
+
+		// If one item was requested, it expects a single user object back
+		if ( !is_array( $user_id ) && $user_id ) {
+			$final_users = array_shift( $final_users );
+		}
+
+		backpress_convert_object( $final_users, $output );
+		return $final_users;
 	}
 
 	function delete_user( $user_id ) {
@@ -303,6 +409,7 @@ class WP_Users {
 		$this->db->query( $this->db->prepare( "DELETE FROM {$this->db->usermeta} WHERE user_id = %d", $user->ID ) );
 
 		wp_cache_delete( $user->ID, 'users' );
+		wp_cache_delete( $user->user_nicename, 'usernicename' );
 		wp_cache_delete( $user->user_email, 'useremail' );
 		wp_cache_delete( $user->user_login, 'userlogins' );
 
@@ -338,6 +445,7 @@ class WP_Users {
 				if ( 'users' == $cache_group ) {
 					wp_cache_add( $trans[$i]->user_login, $i, 'userlogins' );
 					wp_cache_add( $trans[$i]->user_email, $i, 'useremail' );
+					wp_cache_add( $trans[$i]->user_nicename, $i, 'usernicename' );
 				}
 			}
 			return $object;
@@ -356,6 +464,7 @@ class WP_Users {
 			if ( 'users' == $cache_group ) {
 				wp_cache_add($object->user_login, $object->ID, 'userlogins');
 				wp_cache_add($object->user_email, $object->ID, 'useremail');
+				wp_cache_add($object->user_nicename, $object->ID, 'usernicename');
 			}
 			return $object;
 		}
