@@ -16,10 +16,9 @@ class BP_SQL_Schema_Parser
 			return $column_data;
 		}
 
+		$null = '';
 		if ( $column_data['Null'] == 'NO' ) {
 			$null = 'NOT NULL';
-		} else {
-			$null = '';
 		}
 
 		$default = '';
@@ -136,7 +135,7 @@ class BP_SQL_Schema_Parser
 						'Key_name'     => $_index_name,
 						'Seq_in_index' => (string) ( $_index_columns_index + 1 ),
 						'Column_name'  => $_matches_column[1],
-						'Sub_part'     => isset($_matches_column[2]) ? $_matches_column[2] : null,
+						'Sub_part'     => ( isset( $_matches_column[2] ) && $_matches_column[2] ) ? $_matches_column[2] : null,
 						'Index_type'   => ( 'FULLTEXT KEY' == $_index_type ) ? 'FULLTEXT' : 'BTREE'
 					);
 				}
@@ -146,14 +145,14 @@ class BP_SQL_Schema_Parser
 				// It's a column
 
 				// Tidy the NOT NULL
-				$_matches[5] = isset($_matches[5]) ? strtoupper( preg_replace( '@\s+@', ' ', trim( $_matches[5] ) ) ) : null;
+				$_matches[5] = isset( $_matches[5] ) ? strtoupper( preg_replace( '@\s+@', ' ', trim( $_matches[5] ) ) ) : '';
 
 				$_columns[$_matches[1]] = array(
 					'Field'   => $_matches[1],
-					'Type'    => ( isset($_matches[4]) ?( is_numeric( $_matches[3] ) ) ? $_matches[2] . '(' . $_matches[3] . ')' . ( ( strtolower( $_matches[4] ) == 'unsigned' ) ? ' unsigned' : '' ) : $_matches[2] : null),
+					'Type'    => ( is_numeric( $_matches[3] ) ) ? $_matches[2] . '(' . $_matches[3] . ')' . ( ( isset( $_matches[4] ) && strtolower( $_matches[4] ) == 'unsigned' ) ? ' unsigned' : '' ) : $_matches[2],
 					'Null'    => ( 'NOT NULL' == strtoupper( $_matches[5] ) ) ? 'NO' : 'YES',
-					'Default' => ( isset($_matches[7]) ? ( 'default' == strtolower( $_matches[7] ) && 'NULL' !== strtoupper( $_matches[8] ) ) ? trim( $_matches[8], "'" ) : null : null),
-					'Extra'   => ( isset($_matches[6]) ? ( 'auto_increment' == strtolower( $_matches[6] ) ) ? 'auto_increment' : '' : null)
+					'Default' => ( isset( $_matches[7] ) && 'default' == strtolower( $_matches[7] ) && 'NULL' !== strtoupper( $_matches[8] ) ) ? trim( $_matches[8], "'" ) : null,
+					'Extra'   => ( isset( $_matches[6] ) && 'auto_increment' == strtolower( $_matches[6] ) ) ? 'auto_increment' : ''
 				);
 			}
 		}
