@@ -358,6 +358,10 @@ class WP_Users {
 			}
 		}
 
+		if ( !count( $users ) ) {
+			return false;
+		}
+
 		// Add display names
 		$final_users = array();
 		foreach ( $users as $_user ) {
