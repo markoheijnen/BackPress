@@ -1764,7 +1764,30 @@ endif;
 // ! function wp_pre_kses_less_than_callback()
 // ! function wp_sprintf()
 // ! function wp_sprintf_l()
-// ! function wp_html_excerpt()
+
+if ( !function_exists('wp_html_excerpt') ) :
+/**
+ * Safely extracts not more than the first $count characters from html string.
+ *
+ * UTF-8, tags and entities safe prefix extraction. Entities inside will *NOT*
+ * be counted as one character. For example &amp; will be counted as 4, &lt; as
+ * 3, etc.
+ *
+ * @since 2.5.0
+ *
+ * @param integer $str String to get the excerpt from.
+ * @param integer $count Maximum number of characters to take.
+ * @return string The excerpt.
+ */
+function wp_html_excerpt( $str, $count ) {
+	$str = strip_tags( $str );
+	$str = mb_substr( $str, 0, $count );
+	// remove part of an entity at the end
+	$str = preg_replace( '/&[^;\s]{0,6}$/', '', $str );
+	return $str;
+}
+endif;
+
 // ! function links_add_base_url()
 // ! function _links_add_base()
 // ! function links_add_target()
