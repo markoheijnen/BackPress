@@ -10,8 +10,7 @@
  * @subpackage Cache
  */
 
-/** WordPress Object Cache Class */
-require_once( 'class.wp-object-cache.php' );
+
 
 /**
  * Adds data to the cache, if the cache key doesn't aleady exist.
@@ -36,7 +35,7 @@ function wp_cache_add($key, $data, $flag = '', $expire = 0) {
  * Closes the cache.
  *
  * This function has ceased to do anything since WordPress 2.5. The
- * functionality was removed along with the rest of the persistant cache. This
+ * functionality was removed along with the rest of the persistent cache. This
  * does not mean that plugins can't implement this function when they need to
  * make sure that the cache is cleaned up after WordPress no longer needs it.
  *
@@ -155,8 +154,9 @@ function wp_cache_set($key, $data, $flag = '', $expire = 0) {
  * @param string|array $groups A group or an array of groups to add
  */
 function wp_cache_add_global_groups( $groups ) {
-	// Default cache doesn't persist so nothing to do here.
-	return;
+	global $wp_object_cache;
+
+	return $wp_object_cache->add_global_groups( $groups );
 }
 
 /**
@@ -167,6 +167,7 @@ function wp_cache_add_global_groups( $groups ) {
  * @param string|array $groups A group or an array of groups to add
  */
 function wp_cache_add_non_persistent_groups( $groups ) {
-	// Default cache doesn't persist so nothing to do here.
-	return;
+	global $wp_object_cache;
+
+	return $wp_object_cache->add_non_persistent_groups( $groups );
 }

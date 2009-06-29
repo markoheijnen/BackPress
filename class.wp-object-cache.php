@@ -255,6 +255,16 @@ class WP_Object_Cache {
 		}
 	}
 
+	function add_global_groups( $groups )
+	{
+		return true;
+	}
+
+	function add_non_persistent_groups( $groups )
+	{
+		return true;
+	}
+
 	/**
 	 * PHP4 constructor; Calls PHP 5 style constructor
 	 *
