@@ -30,11 +30,24 @@ interface BP_Options_Interface
 	/**
 	 * Retrieve the value of the option.
 	 *
+	 * Here is a minimum set of values required (from bbPress)
+	 * - application_id     : An id for the application, use this when running multiple applications from the same code
+	 * - application_uri    : The base URI of the application
+	 * - cron_uri           : The URI that processes cron jobs
+	 * - cron_check         : A unique hash to check that the cron call is valid
+	 * - wp_http_version    : This is the version sent when making remote HTTP requests
+	 * - hash_function_name : The function used to create unique hashes ( see wp_hash() )
+	 * - language_locale    : The current locale
+	 * - language_directory : The directory containing language (po, mo) files
+	 * - charset            : The charset to use when appropriate (usually UTF-8)
+	 * - gmt_offset         : The GMT offset as a positive or negative float
+	 * - timezone_string    : The timezone in Zoneinfo format
+	 *
 	 * @since r132
 	 *
 	 * @param string $option Option name.
 	 */
-	function get($option);
+	function get( $option );
 
 	/**
 	 * Adds an option with given value.
@@ -44,7 +57,7 @@ interface BP_Options_Interface
 	 * @param string $option Option name.
 	 * @param mixed $value Option value.
 	 */
-	function add($option, $value);
+	function add( $option, $value );
 
 	/**
 	 * Updates an existing option with a given value.
@@ -54,7 +67,7 @@ interface BP_Options_Interface
 	 * @param string $option Option name.
 	 * @param mixed $value Option value.
 	 */
-	function update($option, $value);
+	function update( $option, $value );
 
 	/**
 	 * Deletes an existing option.
@@ -63,7 +76,7 @@ interface BP_Options_Interface
 	 *
 	 * @param string $option Option name.
 	 */
-	function delete($option);
+	function delete( $option );
 } // END interface BP_Options_Interface
 
 /**
