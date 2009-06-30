@@ -73,13 +73,13 @@ class BPDB
 	var $num_queries = 0;
 
 	/**
-	 * Saved result of the last query made
+	 * The last query made
 	 *
 	 * @since 1.0
 	 * @access private
-	 * @var array
+	 * @var string
 	 */
-	var $last_query;
+	var $last_query = null;
 
 	/**
 	 * Saved info on the table column
@@ -88,7 +88,7 @@ class BPDB
 	 * @access private
 	 * @var array
 	 */
-	var $col_info;
+	var $col_info = array();
 	
 	/**
 	 * Saved queries that were executed
@@ -97,7 +97,7 @@ class BPDB
 	 * @access private
 	 * @var array
 	 */
-	var $queries;
+	var $queries = array();
 
 	/**
 	 * Whether to use the query log
@@ -624,7 +624,7 @@ class BPDB
 	function flush()
 	{
 		$this->last_result = array();
-		$this->col_info = null;
+		$this->col_info = array();
 		$this->last_query = null;
 		$this->last_error = '';
 		$this->num_rows = 0;
