@@ -81,8 +81,6 @@ class WP_Object_Cache
 
 	function key( $key, $group )
 	{
-		global $blog_id;
-
 		if ( empty( $group ) ) {
 			$group = 'default';
 		}
@@ -90,7 +88,7 @@ class WP_Object_Cache
 		if ( false !== array_search( $group, $this->global_groups ) ) {
 			$prefix = '';
 		} else {
-			$prefix = $blog_id . ':';
+			$prefix = backpress_get_option( 'application_id' ) . ':';
 		}
 
 		return preg_replace( '/\s+/', '', $prefix . $group . ':' . $key );
