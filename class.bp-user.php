@@ -214,7 +214,7 @@ class BP_User {
 	 * @param string $role Role name.
 	 */
 	function remove_role( $role ) {
-		if ( empty( $this->roles[$role] ) || ( count( $this->roles ) <= 1 ) )
+		if ( empty( $this->caps[$role] ) || ( count( $this->caps ) <= 1 ) )
 			return;
 		unset( $this->caps[$role] );
 		$this->update_user();
