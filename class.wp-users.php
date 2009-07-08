@@ -205,7 +205,7 @@ class WP_Users {
 					$safe_user_ids[] = $this->sanitize_user( $_user_id, true );
 					break;
 				case 'email':
-					if ( !$this->is_email( $_user_id ) ) {
+					if ( $this->is_email( $_user_id ) ) {
 						$safe_user_ids[] = $_user_id;
 					}
 					break;
