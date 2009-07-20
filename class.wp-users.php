@@ -434,7 +434,7 @@ class WP_Users {
 			foreach ( array_keys($object) as $i )
 				$trans[$object[$i]->$id_field] =& $object[$i];
 			$ids = join(',', array_keys($trans));
-			if ( $metas = $this->db->get_results("SELECT $meta_field, meta_key, meta_value FROM {$this->db->$meta_table} WHERE $meta_field IN ($ids) /* WP_Users::append_meta */") ) {
+			if ( $ids && $metas = $this->db->get_results("SELECT $meta_field, meta_key, meta_value FROM {$this->db->$meta_table} WHERE $meta_field IN ($ids) /* WP_Users::append_meta */") ) {
 				usort( $metas, array(&$this, '_append_meta_sort') );
 				foreach ( $metas as $meta ) {
 					if ( empty( $meta->meta_key ) )
