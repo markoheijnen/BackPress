@@ -50,7 +50,7 @@ class WP_Pass {
 	function check_password($password, $hash, $user_id = '') {
 		global $wp_hasher, $wp_users_object;
 
-		list($hash, $broken) = explode( '---', $hash );
+		list($hash, $broken) = array_pad( explode( '---', $hash ), 2, '' );
 
 		// If the hash is still md5...
 		if ( strlen($hash) <= 32 ) {
