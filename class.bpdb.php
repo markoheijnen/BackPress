@@ -742,12 +742,15 @@ class BPDB
 				$form = ( $form = array_shift( $formats ) ) ? $form : $format[0];
 			} elseif ( isset( $this->field_types[$field] ) ) {
 				$form = $this->field_types[$field];
+			} elseif ( is_null( $data[$field] ) ) {
+				$form = 'NULL';
+				unset( $data[$field] );
 			} else {
 				$form = '%s';
 			}
 			$formatted_fields[] = $form;
 		}
-		$sql = "INSERT INTO `$table` (`" . implode( '`,`', $fields ) . "`) VALUES ('" . implode( "','", $formatted_fields ) . "')";
+		$sql = "INSERT INTO `$table` (`" . implode( '`,`', $fields ) . "`) VALUES (" . implode( ",", $formatted_fields ) . ")";
 		return $this->query( $this->prepare( $sql, $data ) );
 	}
 
@@ -781,6 +784,9 @@ class BPDB
 				$form = ( $form = array_shift( $formats ) ) ? $form : $format[0];
 			} elseif ( isset( $this->field_types[$field] ) ) {
 				$form = $this->field_types[$field];
+			} elseif ( is_null( $data[$field] ) ) {
+				$form = 'NULL';
+				unset( $data[$field] );
 			} else {
 				$form = '%s';
 			}
@@ -793,6 +799,10 @@ class BPDB
 				$form = ( $form = array_shift( $where_formats ) ) ? $form : $where_format[0];
 			} elseif ( isset( $this->field_types[$field] ) ) {
 				$form = $this->field_types[$field];
+			} elseif ( is_null( $where[$field] ) ) {
+				unset( $where[$field] );
+				$wheres[] = "`$field` IS NULL";
+				continue;
 			} else {
 				$form = '%s';
 			}
