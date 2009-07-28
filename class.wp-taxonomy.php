@@ -21,7 +21,7 @@ class WP_Taxonomy {
 	 * @var unknown_type
 	 */
 	var $db;
-	var $taxonomioes = array();
+	var $taxonomies = array();
 
 	function WP_Taxonomy( &$db ) {
 		$this->__construct( $db );
