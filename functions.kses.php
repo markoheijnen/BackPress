@@ -1,5 +1,5 @@
 <?php
-// Last sync [WP11537]
+// Last sync [WP11828]
 
 /**
  * HTML/XHTML filter that only allows some elements and attributes
@@ -223,6 +223,19 @@ function wp_kses_attr($element, $attr, $allowed_html, $allowed_protocols) {
 					$ok = false;
 					break;
 				}
+
+			if ( $arreach['name'] == 'style' ) {
+				$orig_value = $arreach['value'];
+
+				$value = safecss_filter_attr($orig_value);
+
+				if ( empty($value) )
+					continue;
+
+				$arreach['value'] = $value;
+
+				$arreach['whole'] = str_replace($orig_value, $value, $arreach['whole']);
+			}
 
 			if ($ok)
 				$attr2 .= ' '.$arreach['whole']; # it passed them
@@ -705,8 +718,189 @@ function valid_unicode($i) {
  * @return string Content after decoded entities
  */
 function wp_kses_decode_entities($string) {
-	$string = preg_replace_callback('/&#([0-9]+);/', create_function('$match', 'return chr($match[1]);'), $string);
-	$string = preg_replace_callback('/&#[Xx]([0-9A-Fa-f]+);/', create_function('$match', 'return chr(hexdec($match[1]));'), $string);
+	$string = preg_replace_callback('/&#([0-9]+);/', '_wp_kses_decode_entities_chr', $string);
+	$string = preg_replace_callback('/&#[Xx]([0-9A-Fa-f]+);/', '_wp_kses_decode_entities_chr_hexdec', $string);
 
 	return $string;
+}
+
+/**
+ * Regex callback for wp_kses_decode_entities()
+ *
+ * @param array $match preg match
+ * @return string
+ */
+function _wp_kses_decode_entities_chr( $match ) {
+	return chr( $match[1] );
+}
+
+/**
+ * Regex callback for wp_kses_decode_entities()
+ *
+ * @param array $match preg match
+ * @return string
+ */
+function _wp_kses_decode_entities_chr_hexdec( $match ) {
+	return chr( hexdec( $match[1] ) );
+}
+
+/**
+ * Sanitize content with allowed HTML Kses rules.
+ *
+ * @since 1.0.0
+ * @uses $allowedtags
+ *
+ * @param string $data Content to filter
+ * @return string Filtered content
+ */
+function wp_filter_kses($data) {
+	global $allowedtags;
+	return addslashes( wp_kses(stripslashes( $data ), $allowedtags) );
+}
+
+/**
+ * Sanitize content for allowed HTML tags for post content.
+ *
+ * Post content refers to the page contents of the 'post' type and not $_POST
+ * data from forms.
+ *
+ * @since 2.0.0
+ * @uses $allowedposttags
+ *
+ * @param string $data Post content to filter
+ * @return string Filtered post content with allowed HTML tags and attributes intact.
+ */
+function wp_filter_post_kses($data) {
+	global $allowedposttags;
+	return addslashes ( wp_kses(stripslashes( $data ), $allowedposttags) );
+}
+
+/**
+ * Strips all of the HTML in the content.
+ *
+ * @since 2.1.0
+ *
+ * @param string $data Content to strip all HTML from
+ * @return string Filtered content without any HTML
+ */
+function wp_filter_nohtml_kses($data) {
+	return addslashes ( wp_kses(stripslashes( $data ), array()) );
+}
+
+/**
+ * Adds all Kses input form content filters.
+ *
+ * All hooks have default priority. The wp_filter_kses() function is added to
+ * the 'pre_comment_content' and 'title_save_pre' hooks.
+ *
+ * The wp_filter_post_kses() function is added to the 'content_save_pre',
+ * 'excerpt_save_pre', and 'content_filtered_save_pre' hooks.
+ *
+ * @since 2.0.0
+ * @uses add_filter() See description for what functions are added to what hooks.
+ */
+function kses_init_filters() {
+	// Normal filtering.
+	add_filter('pre_comment_content', 'wp_filter_kses');
+	add_filter('title_save_pre', 'wp_filter_kses');
+
+	// Post filtering
+	add_filter('content_save_pre', 'wp_filter_post_kses');
+	add_filter('excerpt_save_pre', 'wp_filter_post_kses');
+	add_filter('content_filtered_save_pre', 'wp_filter_post_kses');
+}
+
+/**
+ * Removes all Kses input form content filters.
+ *
+ * A quick procedural method to removing all of the filters that kses uses for
+ * content in WordPress Loop.
+ *
+ * Does not remove the kses_init() function from 'init' hook (priority is
+ * default). Also does not remove kses_init() function from 'set_current_user'
+ * hook (priority is also default).
+ *
+ * @since 2.0.6
+ */
+function kses_remove_filters() {
+	// Normal filtering.
+	remove_filter('pre_comment_content', 'wp_filter_kses');
+	remove_filter('title_save_pre', 'wp_filter_kses');
+
+	// Post filtering
+	remove_filter('content_save_pre', 'wp_filter_post_kses');
+	remove_filter('excerpt_save_pre', 'wp_filter_post_kses');
+	remove_filter('content_filtered_save_pre', 'wp_filter_post_kses');
+}
+
+/**
+ * Sets up most of the Kses filters for input form content.
+ *
+ * If you remove the kses_init() function from 'init' hook and
+ * 'set_current_user' (priority is default), then none of the Kses filter hooks
+ * will be added.
+ *
+ * First removes all of the Kses filters in case the current user does not need
+ * to have Kses filter the content. If the user does not have unfiltered html
+ * capability, then Kses filters are added.
+ *
+ * @uses kses_remove_filters() Removes the Kses filters
+ * @uses kses_init_filters() Adds the Kses filters back if the user
+ *		does not have unfiltered HTML capability.
+ * @since 2.0.0
+ */
+function kses_init() {
+	kses_remove_filters();
+
+	if (current_user_can('unfiltered_html') == false)
+		kses_init_filters();
+}
+
+add_action('init', 'kses_init');
+add_action('set_current_user', 'kses_init');
+
+function safecss_filter_attr( $css, $deprecated = '' ) {
+	$css = wp_kses_no_null($css);
+	$css = str_replace(array("\n","\r","\t"), '', $css);
+
+	if ( preg_match( '%[\\(&]|/\*%', $css ) ) // remove any inline css containing \ ( & or comments
+		return '';
+
+	$css_array = split( ';', trim( $css ) );
+	$allowed_attr = apply_filters( 'safe_style_css', array( 'text-align', 'margin', 'color', 'float', 
+	'border', 'background', 'background-color', 'border-bottom', 'border-bottom-color', 
+	'border-bottom-style', 'border-bottom-width', 'border-collapse', 'border-color', 'border-left',
+	'border-left-color', 'border-left-style', 'border-left-width', 'border-right', 'border-right-color', 
+	'border-right-style', 'border-right-width', 'border-spacing', 'border-style', 'border-top', 
+	'border-top-color', 'border-top-style', 'border-top-width', 'border-width', 'caption-side', 
+	'clear', 'cursor', 'direction', 'font', 'font-family', 'font-size', 'font-style', 
+	'font-variant', 'font-weight', 'height', 'letter-spacing', 'line-height', 'margin-bottom', 
+	'margin-left', 'margin-right', 'margin-top', 'overflow', 'padding', 'padding-bottom', 
+	'padding-left', 'padding-right', 'padding-top', 'text-decoration', 'text-indent', 'vertical-align', 
+	'width' ) );
+
+	if ( empty($allowed_attr) )
+		return $css;
+
+	$css = '';
+	foreach ( $css_array as $css_item ) {
+		if ( $css_item == '' )
+			continue;
+		$css_item = trim( $css_item );
+		$found = false;
+		if ( strpos( $css_item, ':' ) === false ) {
+			$found = true;
+		} else {
+			$parts = split( ':', $css_item );
+			if ( in_array( trim( $parts[0] ), $allowed_attr ) )
+				$found = true;
+		}
+		if ( $found ) {
+			if( $css != '' )
+				$css .= ';';
+			$css .= $css_item;
+		}
+	}
+
+	return $css;
 }
