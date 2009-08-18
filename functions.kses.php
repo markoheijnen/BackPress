@@ -787,77 +787,9 @@ function wp_filter_nohtml_kses($data) {
 	return addslashes ( wp_kses(stripslashes( $data ), array()) );
 }
 
-/**
- * Adds all Kses input form content filters.
- *
- * All hooks have default priority. The wp_filter_kses() function is added to
- * the 'pre_comment_content' and 'title_save_pre' hooks.
- *
- * The wp_filter_post_kses() function is added to the 'content_save_pre',
- * 'excerpt_save_pre', and 'content_filtered_save_pre' hooks.
- *
- * @since 2.0.0
- * @uses add_filter() See description for what functions are added to what hooks.
- */
-function kses_init_filters() {
-	// Normal filtering.
-	add_filter('pre_comment_content', 'wp_filter_kses');
-	add_filter('title_save_pre', 'wp_filter_kses');
-
-	// Post filtering
-	add_filter('content_save_pre', 'wp_filter_post_kses');
-	add_filter('excerpt_save_pre', 'wp_filter_post_kses');
-	add_filter('content_filtered_save_pre', 'wp_filter_post_kses');
-}
-
-/**
- * Removes all Kses input form content filters.
- *
- * A quick procedural method to removing all of the filters that kses uses for
- * content in WordPress Loop.
- *
- * Does not remove the kses_init() function from 'init' hook (priority is
- * default). Also does not remove kses_init() function from 'set_current_user'
- * hook (priority is also default).
- *
- * @since 2.0.6
- */
-function kses_remove_filters() {
-	// Normal filtering.
-	remove_filter('pre_comment_content', 'wp_filter_kses');
-	remove_filter('title_save_pre', 'wp_filter_kses');
-
-	// Post filtering
-	remove_filter('content_save_pre', 'wp_filter_post_kses');
-	remove_filter('excerpt_save_pre', 'wp_filter_post_kses');
-	remove_filter('content_filtered_save_pre', 'wp_filter_post_kses');
-}
-
-/**
- * Sets up most of the Kses filters for input form content.
- *
- * If you remove the kses_init() function from 'init' hook and
- * 'set_current_user' (priority is default), then none of the Kses filter hooks
- * will be added.
- *
- * First removes all of the Kses filters in case the current user does not need
- * to have Kses filter the content. If the user does not have unfiltered html
- * capability, then Kses filters are added.
- *
- * @uses kses_remove_filters() Removes the Kses filters
- * @uses kses_init_filters() Adds the Kses filters back if the user
- *		does not have unfiltered HTML capability.
- * @since 2.0.0
- */
-function kses_init() {
-	kses_remove_filters();
-
-	if (current_user_can('unfiltered_html') == false)
-		kses_init_filters();
-}
-
-add_action('init', 'kses_init');
-add_action('set_current_user', 'kses_init');
+// ! function kses_init_filters()
+// ! function kses_remove_filters()
+// ! function kses_init()
 
 function safecss_filter_attr( $css, $deprecated = '' ) {
 	$css = wp_kses_no_null($css);
