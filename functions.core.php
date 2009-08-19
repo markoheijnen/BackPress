@@ -904,7 +904,7 @@ if ( !function_exists('wp_timezone_choice') ) :
 /**
  * Gives a nicely formatted list of timezone strings // temporary! Not in final
  *
- * @param string $selectedzone - which zone should be the selected one
+ * @param $selected_zone string Selected Zone
  *
  */
 function wp_timezone_choice( $selected_zone ) {
@@ -982,9 +982,9 @@ function wp_timezone_choice( $selected_zone ) {
 					$display = str_replace( 'GMT', '', $zone['city'] );
 					$display = strtr( $display, '+-', '-+' ) . ':00';
 				}
-				$display = '&nbsp;&nbsp;&nbsp;' . sprintf( __( 'UTC %s' ), $display );
+				$display = sprintf( __( 'UTC %s' ), $display );
 			} else {
-				$display = '&nbsp;&nbsp;&nbsp;' . $zone['t_city'];
+				$display = $zone['t_city'];
 				if ( !empty( $zone['subcity'] ) ) {
 					// Add the subcity to the value
 					$value[] = $zone['subcity'];
@@ -1002,7 +1002,7 @@ function wp_timezone_choice( $selected_zone ) {
 		$structure[] = '<option ' . $selected . 'value="' . esc_attr( $value ) . '">' . esc_html( $display ) . "</option>";
 		
 		// Close continent optgroup
-		if ( !empty( $zone['city'] ) && isset( $zonen[$key + 1] ) && $zonen[$key + 1]['continent'] !== $zone['continent'] ) {
+		if ( !empty( $zone['city'] ) && ( !isset($zonen[$key + 1]) || (isset( $zonen[$key + 1] ) && $zonen[$key + 1]['continent'] !== $zone['continent']) ) ) {
 			$structure[] = '</optgroup>';
 		}
 	}
