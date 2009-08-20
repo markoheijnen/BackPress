@@ -1,5 +1,5 @@
 <?php
-// Last sync [WP11616]
+// Last sync [WP11848]
 
 /**
  * From WP wp-includes/formatting.php
@@ -64,7 +64,7 @@ function wptexturize($text) {
 	$static_characters = array_merge(array('---', ' -- ', '--', ' - ', 'xn&#8211;', '...', '``', '\'s', '\'\'', ' (tm)'), $cockney);
 	$static_replacements = array_merge(array('&#8212;', ' &#8212; ', '&#8211;', ' &#8211; ', 'xn--', '&#8230;', $opening_quote, '&#8217;s', $closing_quote, ' &#8482;'), $cockneyreplace);
 
-	$dynamic_characters = array('/\'(\d\d(?:&#8217;|\')?s)/', '/(\s|\A|")\'/', '/(\d+)"/', '/(\d+)\'/', '/(\S)\'([^\'\s])/', '/(\s|\A)"(?!\s)/', '/"(\s|\S|\Z)/', '/\'([\s.]|\Z)/', '/(\d+)x(\d+)/');
+	$dynamic_characters = array('/\'(\d\d(?:&#8217;|\')?s)/', '/(\s|\A|[([{<]|")\'/', '/(\d+)"/', '/(\d+)\'/', '/(\S)\'([^\'\s])/', '/(\s|\A|[([{<])"(?!\s)/', '/"(\s|\S|\Z)/', '/\'([\s.]|\Z)/', '/(\d+)x(\d+)/');
 	$dynamic_replacements = array('&#8217;$1','$1&#8216;', '$1&#8243;', '$1&#8242;', '$1&#8217;$2', '$1' . $opening_quote . '$2', $closing_quote . '$1', '&#8217;$1', '$1&#215;$2');
 
 	for ( $i = 0; $i < $stop; $i++ ) {
@@ -91,8 +91,8 @@ endif;
 
 if ( !function_exists( 'wptexturize_pushpop_element' ) ) :
 function wptexturize_pushpop_element($text, &$stack, $disabled_elements, $opening = '<', $closing = '>') {
-	$o = preg_quote($opening);
-	$c = preg_quote($closing);
+	$o = preg_quote($opening, '/');
+	$c = preg_quote($closing, '/');
 	foreach($disabled_elements as $element) {
 		if (preg_match('/^'.$o.$element.'\b/', $text)) array_push($stack, $element);
 		if (preg_match('/^'.$o.'\/'.$element.$c.'/', $text)) {
@@ -944,10 +944,18 @@ if ( !function_exists( '_make_url_clickable_cb' ) ) :
  */
 function _make_url_clickable_cb($matches) {
 	$url = $matches[2];
+
+	$after = '';
+	if ( preg_match( '|(.+?)([).,;:]*)$|', $url, $split ) ) {
+		$url = $split[1];
+		$after = $split[2];
+	}
+
 	$url = esc_url($url);
 	if ( empty($url) )
 		return $matches[0];
-	return $matches[1] . "<a href=\"$url\" rel=\"nofollow\">$url</a>";
+
+	return $matches[1] . "<a href=\"$url\" rel=\"nofollow\">$url</a>$after";
 }
 endif;
 
@@ -971,12 +979,13 @@ function _make_web_ftp_clickable_cb($matches) {
 	$dest = esc_url($dest);
 	if ( empty($dest) )
 		return $matches[0];
-	// removed trailing [,;:] from URL
-	if ( in_array(substr($dest, -1), array('.', ',', ';', ':')) === true ) {
+
+	// removed trailing [.,;:)] from URL
+	if ( in_array( substr($dest, -1), array('.', ',', ';', ':', ')') ) === true ) {
 		$ret = substr($dest, -1);
 		$dest = substr($dest, 0, strlen($dest)-1);
 	}
-	return $matches[1] . "<a href=\"$dest\" rel=\"nofollow\">$dest</a>" . $ret;
+	return $matches[1] . "<a href=\"$dest\" rel=\"nofollow\">$dest</a>$ret";
 }
 endif;
 
