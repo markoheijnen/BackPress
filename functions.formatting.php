@@ -1,5 +1,5 @@
 <?php
-// Last sync [WP12250]
+// Last sync [WP12504]
 
 /**
  * From WP wp-includes/formatting.php
@@ -1784,7 +1784,7 @@ if ( !function_exists('like_escape') ) :
  * @return string text, safe for inclusion in LIKE query.
  */
 function like_escape($text) {
-	return str_replace(array("%", "_"), array("\\%", "\\_"), $text);
+	return addcslashes($text, '\\%_');
 }
 endif;
 
@@ -1812,8 +1812,38 @@ function wp_parse_str( $string, &$array ) {
 }
 endif;
 
-// ! function wp_pre_kses_less_than()
-// ! function wp_pre_kses_less_than_callback()
+if ( !function_exists('wp_pre_kses_less_than') ) :
+/**
+ * Convert lone less than signs.
+ *
+ * KSES already converts lone greater than signs.
+ *
+ * @uses wp_pre_kses_less_than_callback in the callback function.
+ * @since 2.3.0
+ *
+ * @param string $text Text to be converted.
+ * @return string Converted text.
+ */
+function wp_pre_kses_less_than( $text ) {
+	return preg_replace_callback('%<[^>]*?((?=<)|>|$)%', 'wp_pre_kses_less_than_callback', $text);
+}
+endif;
+if ( !function_exists('wp_pre_kses_less_than_callback') ) :
+/**
+ * Callback function used by preg_replace.
+ *
+ * @uses esc_html to format the $matches text.
+ * @since 2.3.0
+ *
+ * @param array $matches Populated by matches to preg_replace.
+ * @return string The text returned after esc_html if needed.
+ */
+function wp_pre_kses_less_than_callback( $matches ) {
+	if ( false === strpos($matches[0], '>') )
+		return esc_html($matches[0]);
+	return $matches[0];
+}
+endif;
 // ! function wp_sprintf()
 // ! function wp_sprintf_l()
 
@@ -1861,7 +1891,7 @@ function wp_strip_all_tags($string, $remove_breaks = false) {
 	$string = strip_tags($string);
 
 	if ( $remove_breaks )
-		$string = preg_replace('/\s+/', ' ', $string);
+		$string = preg_replace('/[\r\n\t ]+/', ' ', $string);
 
 	return trim($string);
 }
@@ -1887,14 +1917,23 @@ function sanitize_text_field($str) {
 
 	if ( strpos($filtered, '<') !== false ) {
 		$filtered = wp_pre_kses_less_than( $filtered );
+		// This will strip extra whitespace for us.
 		$filtered = wp_strip_all_tags( $filtered, true );
 	} else {
-		 $filtered = trim( preg_replace('/\s+/', ' ', $filtered) );
+		$filtered = trim( preg_replace('/[\r\n\t ]+/', ' ', $filtered) );
 	}
 
 	$match = array();
-	while ( preg_match('/%[a-f0-9]{2}/i', $filtered, $match) )
+	$found = false;
+	while ( preg_match('/%[a-f0-9]{2}/i', $filtered, $match) ) {
 		$filtered = str_replace($match[0], '', $filtered);
+		$found = true;
+	}
+
+	if ( $found ) {
+		// Strip out the whitespace that may now exist after removing the octets.
+		$filtered = trim( preg_replace('/ +/', ' ', $filtered) );
+	}
 
 	return apply_filters('sanitize_text_field', $filtered, $str);
 }
