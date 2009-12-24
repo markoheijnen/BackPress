@@ -1,5 +1,5 @@
 <?php
-// Last sync [WP11537]
+// Last sync [WP11537] - Refactored into a class based on wp-includes/taxonomy.php
 
 /**
  * Taxonomy API
