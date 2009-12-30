@@ -1,5 +1,5 @@
 <?php
-// Last sync [WP11537]
+// Last sync [WP12464]
 
 /**
  * The plugin API is located in this file, which allows for creating actions
@@ -55,7 +55,7 @@
  * @subpackage Plugin
  * @since 0.71
  * @global array $wp_filter Stores all of the filters added in the form of
- *	wp_filter['tag']['array of priorities']['array of functions serialized']['array of ['array (functions, accepted_args)]']
+ *	wp_filter['tag']['array of priorities']['array of functions serialized']['array of ['array (functions, accepted_args)']']
  * @global array $merged_filters Tracks the tags that need to be merged for later. If the hook is added, it doesn't need to run through that process.
  *
  * @param string $tag The name of the filter to hook the $function_to_add to.
@@ -301,10 +301,13 @@ function add_action($tag, $function_to_add, $priority = 10, $accepted_args = 1) 
 function do_action($tag, $arg = '') {
 	global $wp_filter, $wp_actions, $merged_filters, $wp_current_filter;
 
-	if ( is_array($wp_actions) )
-		$wp_actions[] = $tag;
+	if ( ! isset($wp_actions) )
+		$wp_actions = array();
+	
+	if ( ! isset($wp_actions[$tag]) )
+		$wp_actions[$tag] = 1;
 	else
-		$wp_actions = array($tag);
+		++$wp_actions[$tag];
 
 	$wp_current_filter[] = $tag;
 
@@ -359,10 +362,10 @@ function do_action($tag, $arg = '') {
 function did_action($tag) {
 	global $wp_actions;
 
-	if ( empty($wp_actions) )
+	if ( ! isset( $wp_actions ) || ! isset( $wp_actions[$tag] ) )
 		return 0;
 
-	return count(array_keys($wp_actions, $tag));
+	return $wp_actions[$tag];
 }
 
 /**
@@ -384,10 +387,13 @@ function did_action($tag) {
 function do_action_ref_array($tag, $args) {
 	global $wp_filter, $wp_actions, $merged_filters, $wp_current_filter;
 
-	if ( !is_array($wp_actions) )
-		$wp_actions = array($tag);
+	if ( ! isset($wp_actions) )
+		$wp_actions = array();
+	
+	if ( ! isset($wp_actions[$tag]) )
+		$wp_actions[$tag] = 1;
 	else
-		$wp_actions[] = $tag;
+		++$wp_actions[$tag];
 
 	$wp_current_filter[] = $tag;
 
@@ -497,6 +503,7 @@ function plugin_basename($file) {
 	$mu_plugin_dir = str_replace('\\','/',WPMU_PLUGIN_DIR); // sanitize for Win32 installs
 	$mu_plugin_dir = preg_replace('|/+|','/', $mu_plugin_dir); // remove any duplicate slash
 	$file = preg_replace('#^' . preg_quote($plugin_dir, '#') . '/|^' . preg_quote($mu_plugin_dir, '#') . '/#','',$file); // get relative path from plugins dir
+	$file = trim($file, '/');
 	return $file;
 }
 
@@ -676,22 +683,28 @@ function _wp_filter_build_unique_id($tag, $function, $priority) {
 	global $wp_filter;
 	static $filter_id_count = 0;
 
-	// If function then just skip all of the tests and not overwrite the following.
-	if ( is_string($function) )
+	if ( is_string($function) ) {
 		return $function;
-	// Object Class Calling
-	else if (is_object($function[0]) ) {
-		$obj_idx = get_class($function[0]).$function[1];
-		if ( !isset($function[0]->wp_filter_id) ) {
-			if ( false === $priority )
-				return false;
-			$obj_idx .= isset($wp_filter[$tag][$priority]) ? count((array)$wp_filter[$tag][$priority]) : 0;
-			$function[0]->wp_filter_id = $filter_id_count++;
-		} else
-			$obj_idx .= $function[0]->wp_filter_id;
-		return $obj_idx;
-	}
-	// Static Calling
-	else if ( is_string($function[0]) )
+	} else if (is_object($function[0]) ) {
+		// Object Class Calling
+		if ( function_exists('spl_object_hash') ) {
+			return spl_object_hash($function[0]) . $function[1];
+		} else {
+			$obj_idx = get_class($function[0]).$function[1];
+			if ( !isset($function[0]->wp_filter_id) ) {
+				if ( false === $priority )
+					return false;
+				$obj_idx .= isset($wp_filter[$tag][$priority]) ? count((array)$wp_filter[$tag][$priority]) : $filter_id_count;
+				$function[0]->wp_filter_id = $filter_id_count;
+				++$filter_id_count;
+			} else {
+				$obj_idx .= $function[0]->wp_filter_id;
+			}
+	
+			return $obj_idx;
+		}
+	} else if ( is_string($function[0]) ) {
+		// Static Calling
 		return $function[0].$function[1];
+	}
 }
