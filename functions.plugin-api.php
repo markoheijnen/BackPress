@@ -1,5 +1,5 @@
 <?php
-// Last sync [WP12464]
+// Last sync [WP12641]
 
 /**
  * The plugin API is located in this file, which allows for creating actions
@@ -683,9 +683,12 @@ function _wp_filter_build_unique_id($tag, $function, $priority) {
 	global $wp_filter;
 	static $filter_id_count = 0;
 
-	if ( is_string($function) ) {
+	if ( is_string($function) )
 		return $function;
-	} else if (is_object($function[0]) ) {
+
+	$function = (array) $function;
+
+	if (is_object($function[0]) ) {
 		// Object Class Calling
 		if ( function_exists('spl_object_hash') ) {
 			return spl_object_hash($function[0]) . $function[1];
@@ -700,7 +703,7 @@ function _wp_filter_build_unique_id($tag, $function, $priority) {
 			} else {
 				$obj_idx .= $function[0]->wp_filter_id;
 			}
-	
+
 			return $obj_idx;
 		}
 	} else if ( is_string($function[0]) ) {
