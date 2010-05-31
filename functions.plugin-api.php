@@ -1,5 +1,5 @@
 <?php
-// Last sync [WP12641]
+// Last sync [WP14924]
 
 /**
  * The plugin API is located in this file, which allows for creating actions
@@ -176,6 +176,59 @@ function apply_filters($tag, $value) {
 }
 
 /**
+ * Execute functions hooked on a specific filter hook, specifying arguments in an array.
+ *
+ * @see apply_filters() This function is identical, but the arguments passed to the
+ * functions hooked to <tt>$tag</tt> are supplied using an array.
+ *
+ * @package WordPress
+ * @subpackage Plugin
+ * @since 3.0.0
+ * @global array $wp_filter Stores all of the filters
+ * @global array $merged_filters Merges the filter hooks using this function.
+ * @global array $wp_current_filter stores the list of current filters with the current one last
+ *
+ * @param string $tag The name of the filter hook.
+ * @param array $args The arguments supplied to the functions hooked to <tt>$tag</tt>
+ * @return mixed The filtered value after all hooked functions are applied to it.
+ */
+function apply_filters_ref_array($tag, $args) {
+	global $wp_filter, $merged_filters, $wp_current_filter;
+
+	$wp_current_filter[] = $tag;
+
+	// Do 'all' actions first
+	if ( isset($wp_filter['all']) ) {
+		$all_args = func_get_args();
+		_wp_call_all_hook($all_args);
+	}
+
+	if ( !isset($wp_filter[$tag]) ) {
+		array_pop($wp_current_filter);
+		return $args[0];
+	}
+
+	// Sort
+	if ( !isset( $merged_filters[ $tag ] ) ) {
+		ksort($wp_filter[$tag]);
+		$merged_filters[ $tag ] = true;
+	}
+
+	reset( $wp_filter[ $tag ] );
+
+	do {
+		foreach( (array) current($wp_filter[$tag]) as $the_ )
+			if ( !is_null($the_['function']) )
+				$args[0] = call_user_func_array($the_['function'], array_slice($args, 0, (int) $the_['accepted_args']));
+
+	} while ( next($wp_filter[$tag]) !== false );
+
+	array_pop( $wp_current_filter );
+
+	return $args[0];
+}
+
+/**
  * Removes a function from a specified filter hook.
  *
  * This function removes a function attached to a specified filter hook. This
@@ -224,7 +277,7 @@ function remove_all_filters($tag, $priority = false) {
 	global $wp_filter, $merged_filters;
 
 	if( isset($wp_filter[$tag]) ) {
-		if( false !== $priority && isset($$wp_filter[$tag][$priority]) )
+		if( false !== $priority && isset($wp_filter[$tag][$priority]) )
 			unset($wp_filter[$tag][$priority]);
 		else
 			unset($wp_filter[$tag]);
@@ -303,7 +356,7 @@ function do_action($tag, $arg = '') {
 
 	if ( ! isset($wp_actions) )
 		$wp_actions = array();
-	
+
 	if ( ! isset($wp_actions[$tag]) )
 		$wp_actions[$tag] = 1;
 	else
@@ -323,7 +376,7 @@ function do_action($tag, $arg = '') {
 	}
 
 	$args = array();
-	if ( is_array($arg) && 1 == count($arg) && is_object($arg[0]) ) // array(&$this)
+	if ( is_array($arg) && 1 == count($arg) && isset($arg[0]) && is_object($arg[0]) ) // array(&$this)
 		$args[] =& $arg[0];
 	else
 		$args[] = $arg;
@@ -389,7 +442,7 @@ function do_action_ref_array($tag, $args) {
 
 	if ( ! isset($wp_actions) )
 		$wp_actions = array();
-	
+
 	if ( ! isset($wp_actions[$tag]) )
 		$wp_actions[$tag] = 1;
 	else
@@ -686,7 +739,12 @@ function _wp_filter_build_unique_id($tag, $function, $priority) {
 	if ( is_string($function) )
 		return $function;
 
-	$function = (array) $function;
+	if ( is_object($function) ) {
+		// Closures are currently implemented as objects
+		$function = array( $function, '' );
+	} else {
+		$function = (array) $function;
+	}
 
 	if (is_object($function[0]) ) {
 		// Object Class Calling
