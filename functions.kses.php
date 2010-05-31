@@ -1,5 +1,5 @@
 <?php
-// Last sync [WP12199]
+// Last sync [WP14412]
 
 /**
  * HTML/XHTML filter that only allows some elements and attributes
@@ -35,9 +35,9 @@
  * call this function.
  *
  * The default allowed protocols are 'http', 'https', 'ftp', 'mailto', 'news',
- * 'irc', 'gopher', 'nntp', 'feed', and finally 'telnet. This covers all common
- * link protocols, except for 'javascript' which should not be allowed for
- * untrusted users.
+ * 'irc', 'gopher', 'nntp', 'feed', 'telnet, 'mms', 'rtsp' and 'svn'. This
+ * covers all common link protocols, except for 'javascript' which should not
+ * be allowed for untrusted users.
  *
  * @since 1.0.0
  *
@@ -46,7 +46,8 @@
  * @param array $allowed_protocols Optional. Allowed protocol in links.
  * @return string Filtered content with only allowed HTML elements
  */
-function wp_kses($string, $allowed_html, $allowed_protocols = array ('http', 'https', 'ftp', 'ftps', 'mailto', 'news', 'irc', 'gopher', 'nntp', 'feed', 'telnet')) {
+function wp_kses($string, $allowed_html, $allowed_protocols = array ()) {
+	$allowed_protocols = wp_parse_args( $allowed_protocols, apply_filters('kses_allowed_protocols', array ('http', 'https', 'ftp', 'ftps', 'mailto', 'news', 'irc', 'gopher', 'nntp', 'feed', 'telnet', 'mms', 'rtsp', 'svn') ));
 	$string = wp_kses_no_null($string);
 	$string = wp_kses_js_entities($string);
 	$string = wp_kses_normalize_entities($string);
@@ -186,7 +187,7 @@ function wp_kses_attr($element, $attr, $allowed_html, $allowed_protocols) {
 	# Is there a closing XHTML slash at the end of the attributes?
 
 	$xhtml_slash = '';
-	if (preg_match('%\s/\s*$%', $attr))
+	if (preg_match('%\s*/\s*$%', $attr))
 		$xhtml_slash = ' /';
 
 	# Are any attributes allowed at all for this element?
@@ -312,7 +313,7 @@ function wp_kses_hair($attr, $allowed_protocols) {
 
 			case 2 : # attribute value, a URL after href= for instance
 
-				if (preg_match('/^"([^"]*)"(\s+|$)/', $attr, $match))
+				if (preg_match('%^"([^"]*)"(\s+|/?$)%', $attr, $match))
 					# "value"
 					{
 					$thisval = $match[1];
@@ -328,7 +329,7 @@ function wp_kses_hair($attr, $allowed_protocols) {
 					break;
 				}
 
-				if (preg_match("/^'([^']*)'(\s+|$)/", $attr, $match))
+				if (preg_match("%^'([^']*)'(\s+|/?$)%", $attr, $match))
 					# 'value'
 					{
 					$thisval = $match[1];
@@ -344,7 +345,7 @@ function wp_kses_hair($attr, $allowed_protocols) {
 					break;
 				}
 
-				if (preg_match("%^([^\s\"']+)(\s+|$)%", $attr, $match))
+				if (preg_match("%^([^\s\"']+)(\s+|/?$)%", $attr, $match))
 					# value
 					{
 					$thisval = $match[1];
@@ -387,10 +388,10 @@ function wp_kses_hair($attr, $allowed_protocols) {
  * @since 1.0.0
  *
  * @param string $value Attribute value
- * @param string $vless Whether the value is valueless or not. Use 'y' or 'n'
+ * @param string $vless Whether the value is valueless. Use 'y' or 'n'
  * @param string $checkname What $checkvalue is checking for.
  * @param mixed $checkvalue What constraint the value should pass
- * @return bool Whether check passes (true) or not (false)
+ * @return bool Whether check passes
  */
 function wp_kses_check_attr_val($value, $vless, $checkname, $checkvalue) {
 	$ok = true;
@@ -599,7 +600,7 @@ function wp_kses_bad_protocol_once2($matches) {
 	global $_kses_allowed_protocols;
 
 	if ( is_array($matches) ) {
-		if ( ! isset($matches[1]) || empty($matches[1]) )
+		if ( empty($matches[1]) )
 			return '';
 
 		$string = $matches[1];
@@ -643,11 +644,32 @@ function wp_kses_normalize_entities($string) {
 
 	# Change back the allowed entities in our entity whitelist
 
-	$string = preg_replace('/&amp;([A-Za-z][A-Za-z0-9]{0,19});/', '&\\1;', $string);
-	$string = preg_replace_callback('/&amp;#0*([0-9]{1,5});/', 'wp_kses_normalize_entities2', $string);
-	$string = preg_replace_callback('/&amp;#([Xx])0*(([0-9A-Fa-f]{2}){1,2});/', 'wp_kses_normalize_entities3', $string);
+	$string = preg_replace_callback('/&amp;([A-Za-z]{2,8});/', 'wp_kses_named_entities', $string);
+	$string = preg_replace_callback('/&amp;#(0*[0-9]{1,7});/', 'wp_kses_normalize_entities2', $string);
+	$string = preg_replace_callback('/&amp;#[Xx](0*[0-9A-Fa-f]{1,6});/', 'wp_kses_normalize_entities3', $string);
 
 	return $string;
+}
+
+/**
+ * Callback for wp_kses_normalize_entities() regular expression.
+ *
+ * This function only accepts valid named entity references, which are finite,
+ * case-sensitive, and highly scrutinized by HTML and XML validators.
+ *
+ * @since 3.0.0
+ *
+ * @param array $matches preg_replace_callback() matches array
+ * @return string Correctly encoded entity
+ */
+function wp_kses_named_entities($matches) {
+	global $allowedentitynames;
+
+	if ( empty($matches[1]) )
+		return '';
+
+	$i = $matches[1];
+	return ( ( ! in_array($i, $allowedentitynames) ) ? "&amp;$i;" : "&$i;" );
 }
 
 /**
@@ -663,11 +685,18 @@ function wp_kses_normalize_entities($string) {
  * @return string Correctly encoded entity
  */
 function wp_kses_normalize_entities2($matches) {
-	if ( ! isset($matches[1]) || empty($matches[1]) )
+	if ( empty($matches[1]) )
 		return '';
 
 	$i = $matches[1];
-	return ( ( ! valid_unicode($i) ) || ($i > 65535) ? "&amp;#$i;" : "&#$i;" );
+	if (valid_unicode($i)) {
+		$i = str_pad(ltrim($i,'0'), 3, '0', STR_PAD_LEFT);
+		$i = "&#$i;";
+	} else {
+		$i = "&amp;#$i;";
+	}
+
+	return $i;
 }
 
 /**
@@ -682,11 +711,11 @@ function wp_kses_normalize_entities2($matches) {
  * @return string Correctly encoded entity
  */
 function wp_kses_normalize_entities3($matches) {
-	if ( ! isset($matches[2]) || empty($matches[2]) )
+	if ( empty($matches[1]) )
 		return '';
 
-	$hexchars = $matches[2];
-	return ( ( ! valid_unicode(hexdec($hexchars)) ) ? "&amp;#x$hexchars;" : "&#x$hexchars;" );
+	$hexchars = $matches[1];
+	return ( ( ! valid_unicode(hexdec($hexchars)) ) ? "&amp;#x$hexchars;" : '&#x'.ltrim($hexchars,'0').';' );
 }
 
 /**
@@ -819,7 +848,15 @@ function wp_filter_nohtml_kses($data) {
 // ! function kses_remove_filters()
 // ! function kses_init()
 
+/**
+ * Inline CSS filter
+ *
+ * @since 2.8.1
+ */
 function safecss_filter_attr( $css, $deprecated = '' ) {
+	if ( !empty( $deprecated ) )
+		_deprecated_argument( __FUNCTION__, '2.8.1' ); // Never implemented
+
 	$css = wp_kses_no_null($css);
 	$css = str_replace(array("\n","\r","\t"), '', $css);
 
