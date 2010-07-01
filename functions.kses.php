@@ -1,5 +1,5 @@
 <?php
-// Last sync [WP14412]
+// Last sync [WP15356]
 
 /**
  * HTML/XHTML filter that only allows some elements and attributes
@@ -1305,10 +1305,10 @@ function safecss_filter_attr( $css, $deprecated = '' ) {
 	$css = wp_kses_no_null($css);
 	$css = str_replace(array("\n","\r","\t"), '', $css);
 
-	if ( preg_match( '%[\\(&]|/\*%', $css ) ) // remove any inline css containing \ ( & or comments
+	if ( preg_match( '%[\\(&}]|/\*%', $css ) ) // remove any inline css containing \ ( & } or comments
 		return '';
 
-	$css_array = split( ';', trim( $css ) );
+	$css_array = explode( ';', trim( $css ) );
 	$allowed_attr = apply_filters( 'safe_style_css', array( 'text-align', 'margin', 'color', 'float',
 	'border', 'background', 'background-color', 'border-bottom', 'border-bottom-color',
 	'border-bottom-style', 'border-bottom-width', 'border-collapse', 'border-color', 'border-left',
