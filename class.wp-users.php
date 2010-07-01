@@ -526,8 +526,9 @@ class WP_Users {
 		$args = wp_parse_args( $args, $defaults );
 		extract( $args, EXTR_SKIP );
 
-		if ( is_numeric($id) )
-			return false;
+		$user = $this->get_user( $id );
+		if ( !$user || is_wp_error($user) )
+			return $user;
 
 		$id = (int) $id;
 
