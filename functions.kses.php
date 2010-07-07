@@ -31,7 +31,7 @@
 if ( ! defined( 'BP_CUSTOM_TAGS' ) )
 	define( 'BP_CUSTOM_TAGS', false );
 
-if ( ! CUSTOM_TAGS ) {
+if ( ! BP_CUSTOM_TAGS ) {
 	/**
 	 * Kses global for default allowable HTML tags.
 	 *
