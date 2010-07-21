@@ -277,10 +277,10 @@ class WP_Auth
 
 			// Set httponly if the php version is >= 5.2.0
 			if ( version_compare( phpversion(), '5.2.0', 'ge' ) ) {
-				setcookie( $_cookie['name'], $cookie, $expire, $_cookie['path'], $domain, $secure, true );
+				backpress_set_cookie( $_cookie['name'], $cookie, $expire, $_cookie['path'], $domain, $secure, true );
 			} else {
 				$domain = ( empty( $domain ) ) ? $domain : $domain . '; HttpOnly';
-				setcookie( $_cookie['name'], $cookie, $expire, $_cookie['path'], $domain, $secure );
+				backpress_set_cookie( $_cookie['name'], $cookie, $expire, $_cookie['path'], $domain, $secure );
 			}
 		}
 		unset( $_cookie );
@@ -296,7 +296,7 @@ class WP_Auth
 		do_action( 'clear_auth_cookie' );
 		foreach ( $this->cookies as $_scheme => $_scheme_cookies ) {
 			foreach ( $_scheme_cookies as $_cookie ) {
-				setcookie( $_cookie['name'], ' ', time() - 31536000, $_cookie['path'], $_cookie['domain'] );
+				backpress_set_cookie( $_cookie['name'], ' ', time() - 31536000, $_cookie['path'], $_cookie['domain'] );
 			}
 			unset( $_cookie );
 		}

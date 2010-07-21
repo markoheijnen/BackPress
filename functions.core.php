@@ -1235,3 +1235,15 @@ function backpress_die( $message, $title = '', $args = array() )
 	die();
 }
 endif;
+
+/**
+ * Acts the same as core PHP setcookie() but its arguments are run through the backpress_set_cookie filter.
+ * 
+ * If the filter returns false, setcookie() isn't called.
+ */
+function backpress_set_cookie() {
+	$args = func_get_args();
+	$args = apply_filters( 'backpress_set_cookie', $args );
+	if ( $args === false ) return;
+	call_user_func_array( 'setcookie', $args );
+}
