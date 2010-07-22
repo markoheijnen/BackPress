@@ -215,6 +215,9 @@ class WP_Users {
 				default:
 					if ( is_numeric( $_user_id ) ) {
 						$safe_user_ids[] = (int) $_user_id;
+					} else { // If one $_user_id is non-numerical, treat all $user_ids as user_logins
+						$safe_user_ids[] = $this->sanitize_user( $_user_id, true );
+						$by = 'login';
 					}
 					break;
 			}
