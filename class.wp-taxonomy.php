@@ -1784,9 +1784,9 @@ class WP_Taxonomy {
 			}
 			$taxonomies = array_unique($taxonomies);
 		} else {
-			$ids = implode( ',', array_map( 'intval', $ids ) );
+			$tt_ids = implode( ',', array_map( 'intval', $ids ) );
 			$terms = $this->db->get_results("SELECT term_id, term_taxonomy_id FROM {$this->db->term_taxonomy} WHERE term_id IN ($tt_ids)");
-			foreach ( $ids as $id ) {
+			foreach ( (array) $terms as $term ) {
 				wp_cache_delete($term->term_id, $taxonomy);
 				wp_cache_delete($term->term_taxonomy_id, "$taxonomy:tt_id");
 			}
