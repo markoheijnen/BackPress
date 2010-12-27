@@ -185,7 +185,7 @@ class WP_Object_Cache
 	{
 		$key = $this->key($id, $group);
 
-		if ( isset( $this->cache[$key] ) && 'checkthedatabaseplease' == $this->cache[$key] ) {
+		if ( isset( $this->cache[$key] ) && 'checkthedatabaseplease' === $this->cache[$key] ) {
 			return false;
 		}
 		$this->cache[$key] = $data;
