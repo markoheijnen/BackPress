@@ -116,7 +116,7 @@ class WP_Object_Cache
 
 		$this->cache[$key] = $value;
 
-		if ( 'checkthedatabaseplease' == $value ) {
+		if ( 'checkthedatabaseplease' === $value ) {
 			$value = false;
 		}
 
