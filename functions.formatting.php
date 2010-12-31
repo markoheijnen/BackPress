@@ -1538,7 +1538,7 @@ if ( !function_exists('clean_url') ) :
  *
  * @param string $url The URL to be cleaned.
  * @param array $protocols Optional. An array of acceptable protocols.
- *		Defaults to 'http', 'https', 'ftp', 'ftps', 'mailto', 'news', 'irc', 'gopher', 'nntp', 'feed', 'telnet' if not set.
+ *		Defaults to 'http', 'https', 'ftp', 'ftps', 'mailto', 'news', 'irc', 'gopher', 'nntp', 'feed', 'telnet', 'mms', 'rtsp', 'svn' if not set.
  * @param string $context Optional. How the URL will be used. Default is 'display'.
  * @return string The cleaned $url after the 'cleaned_url' filter is applied.
  */
@@ -1560,7 +1560,7 @@ function clean_url( $url, $protocols = null, $context = 'display' ) {
 		$url = 'http://' . $url;
 
 	// Replace ampersands and single quotes only when displaying.
-	if ( 'display' == $_context ) {
+	if ( 'display' == $context ) {
 		$url = wp_kses_normalize_entities( $url );
 		$url = str_replace( '&amp;', '&#038;', $url );
 		$url = str_replace( "'", '&#039;', $url );
@@ -1571,7 +1571,7 @@ function clean_url( $url, $protocols = null, $context = 'display' ) {
 	if ( wp_kses_bad_protocol( $url, $protocols ) != $url )
 		return '';
 
-	return apply_filters('clean_url', $url, $original_url, $_context);
+	return apply_filters('clean_url', $url, $original_url, $context);
 }
 endif;
 
