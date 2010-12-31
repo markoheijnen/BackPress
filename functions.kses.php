@@ -1,5 +1,5 @@
 <?php
-// Last sync [WP17181]
+// Last sync [WP17185]
 
 /**
  * kses 0.2.2 - HTML/XHTML filter that only allows some elements and attributes
@@ -26,7 +26,7 @@
  *
  * @version 0.2.2
  * @copyright (C) 2002, 2003, 2005
- * @author Ulf Harnhammar <metaur@users.sourceforge.net>
+ * @author Ulf Harnhammar <http://advogato.org/person/metaur/>
  *
  * @package External
  * @subpackage KSES
