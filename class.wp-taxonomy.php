@@ -363,7 +363,7 @@ class WP_Taxonomy {
 		} else if ( 'tt_id' == $field ) {
 			$field = 'tt.term_taxonomy_id';
 			$value = (int) $value;
-			if ( $_term_id = wp_cache_get( $value, "$taxonomy:tt_id" ) );
+			if ( $_term_id = wp_cache_get( $value, "$taxonomy:tt_id" ) )
 				return $this->get_term( $_term_id, $taxonomy, $output, $filter );
 		} else {
 			$field = 't.term_id';
