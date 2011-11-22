@@ -681,7 +681,7 @@ class BPDB
 		}
 
 		// If there is an error then take note of it..
-		if ( $this->last_error = mysql_error( $dbh ) ) {
+		if ( is_resource( $dbh ) && $this->last_error = mysql_error( $dbh ) ) {
 			return $this->print_error( $this->last_error );
 		}
 
