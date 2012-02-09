@@ -469,7 +469,8 @@ class BP_SQL_Schema_Parser
 						$_existing_table_index['Cardinality'],
 						$_existing_table_index['Packed'],
 						$_existing_table_index['Null'],
-						$_existing_table_index['Comment']
+						$_existing_table_index['Comment'],
+						$_existing_table_index['Index_comment']
 					);
 					$__existing_table_indices[$_existing_table_index['Key_name']][] = $_existing_table_index;
 				}
