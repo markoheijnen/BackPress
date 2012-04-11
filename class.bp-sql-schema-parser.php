@@ -422,6 +422,7 @@ class BP_SQL_Schema_Parser
 
 						// Adjust defaults on columns that allow defaults
 						if (
+							! is_null( $_new_column_data['Default'] ) && // Possibly should use DROP DEFAULT here
 							$_new_column_data['Default'] !== $_existing_table_columns[$_new_column_name]['Default'] &&
 							!in_array(
 								strtolower( $_new_column_data['Type'] ),
@@ -438,6 +439,9 @@ class BP_SQL_Schema_Parser
 							// Don't continue, overwrite this if the next conditional is met
 						}
 
+						// TODO Improve handling of scenarios like http://dev.mysql.com/doc/refman/5.0/en/silent-column-changes.html
+						// The db picks different column data types from the schema and we can't make it change it's mind ;)
+						// e.g. varchar(32) and char(32)
 						if (
 							$_new_column_data['Type'] !== $_existing_table_columns[$_new_column_name]['Type'] ||
 							( 'YES' === $_new_column_data['Null'] xor 'YES' === $_existing_table_columns[$_new_column_name]['Null'] ) ||
