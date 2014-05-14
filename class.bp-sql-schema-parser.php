@@ -102,7 +102,7 @@ class BP_SQL_Schema_Parser
 		// Tidy up the table columns/indices
 		$_columns_indices = trim( $_matches[3], " \t\n\r\0\x0B," );
 		// Split by commas not followed by a closing parenthesis ")", using fancy lookaheads
-		$_columns_indices = preg_split( '@,(?!(?:[^\(]+\)))@ms', $_columns_indices );
+		$_columns_indices = preg_split( '@,(?!(?:[^\(]+\)))$@ms', $_columns_indices );
 		$_columns_indices = array_map( 'trim', $_columns_indices );
 
 		// Tidy the table attributes
