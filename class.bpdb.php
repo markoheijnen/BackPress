@@ -149,27 +149,13 @@ class BPDB
 	var $tables = array();
 
 	/**
-	 * Whether to use mysql_real_escape_string
+	 * Whether to use mysqli_real_escape_string
 	 *
 	 * @since 1.0
 	 * @access public
 	 * @var bool
 	 */
 	var $real_escape = false;
-
-	/**
-	 * PHP4 style constructor
-	 *
-	 * @since 1.0
-	 *
-	 * @return unknown Returns the result of bpdb::__construct()
-	 */
-	function BPDB()
-	{
-		$args = func_get_args();
-		register_shutdown_function( array( &$this, '__destruct' ) );
-		return call_user_func_array( array( &$this, '__construct' ), $args );
-	}
 
 	/**
 	 * PHP5 style constructor
@@ -198,7 +184,7 @@ class BPDB
 	 */
 	function _init( $args )
 	{
-		if ( !extension_loaded( 'mysql' ) ) {
+		if ( !extension_loaded( 'mysqli' ) ) {
 			$this->show_errors();
 			$this->bail( BPDB__PHP_EXTENSION_MISSING );
 			return;
@@ -285,7 +271,7 @@ class BPDB
 		extract( $args, EXTR_SKIP );
 
 		unset( $this->dbh ); // De-reference before re-assigning
-		$this->dbh = @mysql_connect( $host, $user, $password, true );
+		$this->dbh = @mysqli_connect( $host, $user, $password );
 
 		if ( !$this->dbh ) {
 			if ( !$this->suppress_errors ) {
@@ -299,8 +285,8 @@ class BPDB
 
 		if ( $this->has_cap( 'collation' ) ) {
 			if ( !empty( $charset ) ) {
-				if ( function_exists( 'mysql_set_charset' ) ) {
-					mysql_set_charset( $charset, $this->dbh );
+				if ( function_exists( 'mysqli_set_charset' ) ) {
+					mysqli_set_charset( $this->dbh, $charset );
 					$this->real_escape = true;
 				} else {
 					$collation_query = "SET NAMES '{$charset}'";
@@ -374,7 +360,7 @@ class BPDB
 	 */
 	function select( $db, &$dbh )
 	{
-		if ( !@mysql_select_db( $db, $dbh ) ) {
+		if ( ! @mysqli_select_db( $dbh, $db ) ) {
 			$this->ready = false;
 			$this->show_errors();
 			$this->bail( BPDB__SELECT_ERROR_MESSAGE );
@@ -391,7 +377,7 @@ class BPDB
 	function _real_escape( $string )
 	{
 		if ( $this->dbh && $this->real_escape ) {
-			return mysql_real_escape_string( $string, $this->dbh );
+			return mysqli_real_escape_string( $this->dbh, $string );
 		} else {
 			return addslashes( $string );
 		}
@@ -662,7 +648,7 @@ class BPDB
 		// Keep track of the last query for debug..
 		$this->last_query = $query;
 
-		// Perform the query via std mysql_query function..
+		// Perform the query via std mysqli_query function..
 		if ( SAVEQUERIES ) {
 			$this->timer_start();
 		}
@@ -673,7 +659,7 @@ class BPDB
 			$dbh = $this->db_connect( $query );
 		}
 
-		$this->result = @mysql_query( $query, $dbh );
+		$this->result = @mysqli_query( $dbh, $query );
 		++$this->num_queries;
 
 		if ( SAVEQUERIES ) {
@@ -681,31 +667,31 @@ class BPDB
 		}
 
 		// If there is an error then take note of it..
-		if ( is_resource( $dbh ) && $this->last_error = mysql_error( $dbh ) ) {
+		if ( $dbh instanceof mysqli && $this->last_error = mysqli_error( $dbh ) ) {
 			return $this->print_error( $this->last_error );
 		}
 
 		if ( preg_match( "/^\\s*(insert|delete|update|replace|alter) /i", $query ) ) {
-			$this->rows_affected = mysql_affected_rows( $dbh );
+			$this->rows_affected = mysqli_affected_rows( $dbh );
 			// Take note of the insert_id
 			if ( preg_match( "/^\\s*(insert|replace) /i", $query ) ) {
-				$this->insert_id = mysql_insert_id( $dbh );
+				$this->insert_id = mysqli_insert_id( $dbh );
 			}
 			// Return number of rows affected
 			$return_val = $this->rows_affected;
 		} else {
 			$i = 0;
-			while ( $i < @mysql_num_fields( $this->result ) ) {
-				$this->col_info[$i] = @mysql_fetch_field( $this->result );
+			while ( $i < @mysqli_num_fields( $this->result ) ) {
+				$this->col_info[$i] = @mysqli_fetch_field( $this->result );
 				$i++;
 			}
 			$num_rows = 0;
-			while ( $row = @mysql_fetch_object( $this->result ) ) {
+			while ( $row = @mysqli_fetch_object( $this->result ) ) {
 				$this->last_result[$num_rows] = $row;
 				$num_rows++;
 			}
 
-			@mysql_free_result( $this->result );
+			@mysqli_free_result( $this->result );
 
 			// Log number of rows the query returned
 			$this->num_rows = $num_rows;
@@ -1114,14 +1100,14 @@ class BPDB
 	{
 		if ( !$dbh_or_table ) {
 			$dbh =& $this->dbh;
-		} elseif ( is_resource( $dbh_or_table ) ) {
+		} elseif ( $dbh_or_table instanceof mysqli ) {
 			$dbh =& $dbh_or_table;
 		} else {
 			$dbh = $this->db_connect( "DESCRIBE $dbh_or_table" );
 		}
 
 		if ( $dbh ) {
-			return preg_replace( '|[^0-9\.]|', '', mysql_get_server_info( $dbh ) );
+			return preg_replace( '|[^0-9\.]|', '', mysqli_get_server_info( $dbh ) );
 		}
 		return false;
 	}

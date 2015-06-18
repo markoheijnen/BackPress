@@ -9,7 +9,7 @@ require( BACKPRESS_PATH . 'class.bpdb.php' );
 
 class BPDB_Multi extends BPDB {
 	/**
-	 * Associative array (dbhname => dbh) for established mysql connections
+	 * Associative array (dbhname => dbh) for established mysqli connections
 	 * @var array
 	 */
         var $dbhs = array();
@@ -34,7 +34,7 @@ class BPDB_Multi extends BPDB {
 	/**
 	 * Figure out which database server should handle the query, and connect to it.
 	 * @param string query
-	 * @return resource mysql database connection
+	 * @return resource mysqli database connection
 	 */
 	function &db_connect( $query = '' ) {
 		$false = false;
@@ -132,7 +132,7 @@ class BPDB_Multi extends BPDB {
 		if ( preg_match('/^\s*SELECT.*?\s+FOUND_ROWS\(\)/is', $q) )
 			return $this->last_table;
 
-		// Big pattern for the rest of the table-related queries in MySQL 5.0
+		// Big pattern for the rest of the table-related queries in MySQLi 5.0
 		if ( preg_match('/^\s*(?:'
 				. '(?:EXPLAIN\s+(?:EXTENDED\s+)?)?SELECT.*?\s+FROM'
 				. '|INSERT(?:\s+LOW_PRIORITY|\s+DELAYED|\s+HIGH_PRIORITY)?(?:\s+IGNORE)?(?:\s+INTO)?'
