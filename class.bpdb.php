@@ -158,8 +158,6 @@ class BPDB
 	var $real_escape = false;
 
 	/**
-	 * PHP5 style constructor
-	 *
 	 * Grabs the arguments, calls bpdb::_init() and then connects to the database
 	 *
 	 * @since 1.0
@@ -224,8 +222,6 @@ class BPDB
 	}
 
 	/**
-	 * PHP5 style destructor, registered as shutdown function in PHP4
-	 *
 	 * @since 1.0
 	 *
 	 * @return bool Always returns true

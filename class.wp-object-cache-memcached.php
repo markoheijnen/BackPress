@@ -19,7 +19,7 @@ class WP_Object_Cache
 
 	var $default_expiration = 0;
 
-	function WP_Object_Cache()
+	function __construct()
 	{
 		global $memcached_servers;
 

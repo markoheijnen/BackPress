@@ -23,27 +23,13 @@ class WP_Taxonomy {
 	var $db;
 	var $taxonomies = array();
 
-	function WP_Taxonomy( &$db ) {
-		$this->__construct( $db );
-		register_shutdown_function( array(&$this, '__destruct') );
-	}
-
 	/**
-	 * PHP5 constructor - Assigns the database to an attribute of the class.
+	 * Assigns the database to an attribute of the class.
 	 *
 	 * @param unknown_type $db
 	 */
 	function __construct( &$db ) {
 		$this->db =& $db;
-	}
-
-	/**
-	 * Does nothing.
-	 *
-	 * @package BackPress
-	 * @subpackage Taxonomy
-	 */
-	function __destruct() {
 	}
 
 	/**

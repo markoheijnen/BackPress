@@ -43,20 +43,7 @@
 class WP_Http {
 
 	/**
-	 * PHP4 style Constructor - Calls PHP5 Style Constructor
-	 *
-	 * @since 2.7.0
-	 * @return WP_Http
-	 */
-	function WP_Http() {
-		$this->__construct();
-	}
-
-	/**
-	 * PHP5 style Constructor - Setup available transport if not available.
-	 *
-	 * PHP4 does not have the 'self' keyword and since WordPress supports PHP4,
-	 * the class needs to be used for the static call.
+	 * Setup available transport if not available.
 	 *
 	 * The transport are setup to save time. This should only be called once, so
 	 * the overhead should be fine.
@@ -65,8 +52,8 @@ class WP_Http {
 	 * @return WP_Http
 	 */
 	function __construct() {
-		WP_Http::_getTransport();
-		WP_Http::_postTransport();
+		self::_getTransport();
+		self::_postTransport();
 	}
 
 	/**
@@ -1598,17 +1585,6 @@ class WP_Http_Cookie {
 	 * @var string
 	 */
 	var $domain;
-
-	/**
-	 * PHP4 style Constructor - Calls PHP5 Style Constructor.
-	 *
-	 * @access public
-	 * @since 2.8.0
-	 * @param string|array $data Raw cookie data.
-	 */
-	function WP_Http_Cookie( $data ) {
-		$this->__construct( $data );
-	}
 
 	/**
 	 * Sets up this cookie object.

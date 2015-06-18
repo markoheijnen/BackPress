@@ -4,10 +4,6 @@ class BP_Roles {
 	var $role_objects = array();
 	var $role_names = array();
 
-	function BP_Roles() {
-		$this->__construct();
-	}
-
 	function __construct() {
 		do_action_ref_array('init_roles', array(&$this) );
 	}

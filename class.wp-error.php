@@ -32,7 +32,7 @@ class WP_Error {
 	var $error_data = array();
 
 	/**
-	 * PHP4 Constructor - Sets up error message.
+	 * Sets up error message.
 	 *
 	 * If code parameter is empty then nothing will be done. It is possible to
 	 * add multiple messages to the same code, but with other methods in the
@@ -48,14 +48,16 @@ class WP_Error {
 	 * @param mixed $data Optional. Error data.
 	 * @return WP_Error
 	 */
-	function WP_Error($code = '', $message = '', $data = '') {
-		if ( empty($code) )
+	function __construct($code = '', $message = '', $data = '') {
+		if ( empty( $code ) ) {
 			return;
+		}
 
 		$this->errors[$code][] = $message;
 
-		if ( ! empty($data) )
+		if ( ! empty( $data ) ) {
 			$this->error_data[$code] = $data;
+		}
 	}
 
 	/**
