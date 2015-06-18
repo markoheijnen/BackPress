@@ -19,8 +19,6 @@ class BPDB_Multi extends BPDB {
 	var $db_tables = array();
 	var $db_servers = array();
 
-	// function BPDB_Multi() {} // Not used - rely on PHP4 constructor from BPDB to call BPDB_Multi::__construct
-
 	function __construct() {
 		$args = func_get_args();
 		$args = call_user_func_array( array(&$this, '_init'), $args );
@@ -57,12 +55,12 @@ class BPDB_Multi extends BPDB {
 		if ( !isset($this->db_servers[$dbhname]) )
 			return $false;
 
-		if ( isset($this->dbhs[$dbhname]) && is_resource($this->dbhs[$dbhname]) ) // We're already connected!
+		if ( isset($this->dbhs[$dbhname]) && $this->dbhs[$dbhname] instanceof mysqli ) // We're already connected!
 			return $this->dbhs[$dbhname];
 		
 		$success = $this->db_connect_host( $this->db_servers[$dbhname] );
 
-		if ( $success && is_resource($this->dbh) ) {
+		if ( $success && $this->dbh instanceof mysqli ) {
 			$this->dbhs[$dbhname] =& $this->dbh;
 		} else {
 			unset($this->dbhs[$dbhname]);
